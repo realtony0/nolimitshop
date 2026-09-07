@@ -18,7 +18,7 @@ window.CONFIG = {
 
     // Numéro WhatsApp au format international SANS "+" ni espaces (ex : "221771234567").
     // Dès qu'il est rempli, les commandes arrivent PRÉ-REMPLIES dans WhatsApp.
-    whatsapp: "",
+    whatsapp: "221770321603",
     // Lien WhatsApp court de la boutique (utilisé tant que le numéro est vide).
     whatsappLien: "https://wa.me/message/Z65TGEO5YBMUD1",
     telephone: "+221 77 000 00 00",
