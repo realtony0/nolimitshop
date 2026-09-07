@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Nolimit Shop — Chemises &amp; polos oversize à Dakar</title>
+<meta name="description" content="Nolimit Shop : chemises et polos oversize à Dakar. Pièces sélectionnées, livraison 24h à Dakar, paiement à la livraison. Commande sur WhatsApp.">
+<meta name="theme-color" content="#000000">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="Nolimit Shop — Là où le style rencontre la tendance">
+<meta property="og:description" content="Chemises &amp; polos oversize à Dakar. Livraison 24h, paiement à la livraison.">
+<meta property="og:image" content="assets/img/og-image.jpg">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<div class="topbar"><div class="topbar__track" id="topbarTrack"></div></div>
+
+<!-- =============================================================== HEADER -->
+<header class="hdr" id="hdr">
+  <div class="wrap hdr__in">
+    <a href="#" class="logo" aria-label="Accueil Nolimit Shop">
+      <span class="logo__mark">
+        <svg viewBox="0 0 200 140" fill="none" aria-hidden="true">
+          <g stroke="currentColor" fill="currentColor">
+            <path d="M38 64V56a16 16 0 0 1 32 0v8" stroke-width="9" stroke-linecap="round" fill="none"/>
+            <path d="M24 66h56v54H24z" stroke="none"/>
+            <path d="M130 64V56a16 16 0 0 1 32 0v8" stroke-width="9" stroke-linecap="round" fill="none"/>
+            <path d="M120 66h56v54h-56z" stroke="none"/>
+            <path d="M74 50V34a26 26 0 0 1 52 0v16" stroke-width="12" stroke-linecap="round" fill="none"/>
+            <path d="M60 52h80l-6 74H66z" stroke="none"/>
+          </g>
+        </svg>
+      </span>
+      <span class="logo__txt">NOLIMIT SHOP</span>
+    </a>
+
+    <nav class="nav" id="nav">
+      <a href="#categories" class="nav__l">Catégories</a>
+      <a href="#catalogue" class="nav__l">Boutique</a>
+      <a href="#atouts" class="nav__l">Pourquoi nous</a>
+      <a href="#faq" class="nav__l">FAQ</a>
+      <a href="#contact" class="nav__l">Contact</a>
+    </nav>
+
+    <div class="hdr__act">
+      <button class="iconbtn" id="btnSearch" aria-label="Rechercher">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      </button>
+      <button class="iconbtn" id="btnCart" aria-label="Ouvrir le panier">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16l-1.4 11.2a2 2 0 0 1-2 1.8H7.4a2 2 0 0 1-2-1.8L4 7Z"/><path d="M9 7V5.5a3 3 0 0 1 6 0V7"/></svg>
+        <span class="badge" id="cartCount" hidden>0</span>
+      </button>
+      <button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<!-- ================================================================= HERO -->
+<section class="hero">
+  <div class="wrap hero__in">
+    <div>
+      <p class="eyebrow">Dakar · Sénégal</p>
+      <h1 class="hero__t">
+        <span>Le style</span>
+        <span class="vert">sans limite</span>
+        <span>à Dakar</span>
+      </h1>
+      <p class="hero__p">Chemises et polos oversize sélectionnés pièce par pièce. Paiement à la livraison, partout au Sénégal.</p>
+      <div class="hero__cta">
+        <a href="#catalogue" class="btn btn--blanc">Découvrir →</a>
+        <a href="#" class="btn btn--ligne" data-wa="Bonjour Nolimit Shop 👋 J'aimerais des conseils pour choisir un article.">WhatsApp</a>
+      </div>
+      <ul class="hero__pills">
+        <li>🚚 Livraison 24h à Dakar</li>
+        <li>💵 Paiement à la livraison</li>
+        <li>🔁 Échange sous 48h</li>
+      </ul>
+    </div>
+    <div class="hero__media" id="heroMedia"></div>
+  </div>
+</section>
+
+<!-- =========================================================== CATÉGORIES -->
+<section class="sec" id="categories">
+  <div class="wrap">
+    <div class="sec__head">
+      <h2 class="sec__t">Nos catégories</h2>
+      <div class="sec__bar"></div>
+    </div>
+    <div class="cats" id="catsRow"></div>
+  </div>
+</section>
+
+<!-- ============================================================ CATALOGUE -->
+<section class="sec sec--gris" id="catalogue">
+  <div class="wrap">
+    <div class="sec__head">
+      <h2 class="sec__t">Nos articles</h2>
+      <p class="sec__p">Découvrez notre sélection de pièces disponibles à Dakar</p>
+      <div class="sec__bar"></div>
+    </div>
+
+    <div class="tools">
+      <div class="searchbox">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input type="search" id="search" placeholder="Rechercher un article…" aria-label="Rechercher un article">
+      </div>
+      <div class="tools" id="filters" role="tablist" aria-label="Filtrer par catégorie"></div>
+    </div>
+
+    <div class="grid" id="grid"></div>
+    <p class="empty" id="empty" hidden>Aucun article ne correspond à votre recherche.</p>
+  </div>
+</section>
+
+<!-- =============================================================== ATOUTS -->
+<section class="sec" id="atouts">
+  <div class="wrap">
+    <div class="sec__head">
+      <h2 class="sec__t">Pourquoi Nolimit Shop ?</h2>
+      <div class="sec__bar"></div>
+    </div>
+    <div class="atouts" id="atoutsGrid"></div>
+  </div>
+</section>
+
+<!-- ================================================================= AVIS -->
+<section class="sec sec--gris" id="secAvis" hidden>
+  <div class="wrap">
+    <div class="sec__head">
+      <h2 class="sec__t">Avis clients</h2>
+      <div class="sec__bar"></div>
+    </div>
+    <div class="avis" id="avisList"></div>
+  </div>
+</section>
+
+<!-- ================================================================== FAQ -->
+<section class="sec" id="faq">
+  <div class="wrap wrap--narrow">
+    <div class="sec__head">
+      <h2 class="sec__t">Questions fréquentes</h2>
+      <div class="sec__bar"></div>
+    </div>
+    <div class="faq" id="faqList"></div>
+  </div>
+</section>
+
+<!-- ============================================================== CONTACT -->
+<section class="cta" id="contact">
+  <div class="wrap">
+    <h2 class="cta__t">Une question ? On répond tout de suite</h2>
+    <p class="cta__p">Taille, couleur, disponibilité, délai de livraison — écrivez-nous, une vraie personne vous répond.</p>
+    <div class="cta__btns">
+      <a href="#" class="btn btn--wa" data-wa="Bonjour Nolimit Shop 👋 J'ai une question.">Discuter sur WhatsApp</a>
+      <a href="#" class="btn btn--ligne" id="telLink" style="color:#fff">Appeler la boutique</a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- =============================================================== FOOTER -->
+<footer class="ftr">
+  <div class="wrap">
+    <img src="assets/img/logo.svg" alt="Nolimit Shop — là où le style rencontre la tendance" class="ftr__logo" width="240" height="145">
+    <div class="ftr__cols">
+      <div>
+        <h3>Boutique</h3>
+        <a href="#categories">Catégories</a>
+        <a href="#catalogue">Tous les articles</a>
+        <a href="#faq">Livraison &amp; échange</a>
+      </div>
+      <div>
+        <h3>Contact</h3>
+        <p id="ftrTel"></p>
+        <p id="ftrMail"></p>
+        <p id="ftrAdr"></p>
+        <p id="ftrHoraires"></p>
+      </div>
+      <div class="ftr__soc" id="ftrSoc"></div>
+    </div>
+    <p class="ftr__copy">© <span id="year"></span> Nolimit Shop — Paiement à la livraison partout au Sénégal.</p>
+  </div>
+</footer>
+
+<a href="#" class="fab" data-wa="Bonjour Nolimit Shop 👋" aria-label="Contacter sur WhatsApp">
+  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5.1-1.3A10 10 0 1 0 12 2Zm5.6 14.1c-.2.6-1.2 1.2-1.7 1.2-.5.1-1 .1-1.6-.1-.4-.1-.9-.3-1.5-.6-2.6-1.1-4.3-3.7-4.5-3.9-.1-.2-1-1.4-1-2.6 0-1.2.6-1.8.9-2.1.2-.2.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 1.9c.1.2.1.4 0 .5l-.3.5-.4.4c-.1.1-.3.3-.1.6.2.3.7 1.2 1.6 2 1.1.9 2 1.2 2.3 1.4.3.1.4.1.6-.1l.8-1c.2-.2.4-.2.6-.1l1.8.9c.2.1.4.2.5.3.1.2.1.9-.1 1.5Z"/></svg>
+</a>
+
+<!-- ======================================================== MODALE PRODUIT -->
+<div class="ovl" id="ovlProduit" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="pNom">
+    <button class="modal__x" data-close aria-label="Fermer">&times;</button>
+    <div class="pdt" id="pdtBody"></div>
+  </div>
+</div>
+
+<!-- ================================================================ PANIER -->
+<div class="ovl ovl--right" id="ovlPanier" hidden>
+  <aside class="drawer" role="dialog" aria-modal="true" aria-label="Votre panier">
+    <header class="drawer__hd">
+      <h2>Votre panier</h2>
+      <button class="modal__x" data-close aria-label="Fermer">&times;</button>
+    </header>
+    <div class="drawer__body" id="cartBody"></div>
+    <footer class="drawer__ft" id="cartFoot" hidden>
+      <div class="line"><span>Sous-total</span><b id="cartSub">0 FCFA</b></div>
+      <p class="drawer__note">Les frais de livraison sont calculés à l'étape suivante.</p>
+      <button class="btn btn--noir btn--full" id="btnCheckout">Commander</button>
+      <button class="linkbtn" id="btnClear">Vider le panier</button>
+    </footer>
+  </aside>
+</div>
+
+<!-- ======================================================= MODALE COMMANDE -->
+<div class="ovl" id="ovlCommande" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="cmdTitre" style="max-width:560px">
+    <button class="modal__x" data-close aria-label="Fermer">&times;</button>
+    <h2 class="modal__t" id="cmdTitre">Finaliser la commande</h2>
+    <p class="modal__st">La commande part sur notre WhatsApp. <b>Vous payez à la livraison.</b></p>
+
+    <form id="formCmd" novalidate>
+      <label class="fld"><span>Nom complet *</span><input type="text" name="nom" required placeholder="Ex : Awa Diallo"></label>
+      <label class="fld"><span>Téléphone (WhatsApp) *</span><input type="tel" name="tel" required placeholder="Ex : 77 123 45 67"></label>
+      <label class="fld"><span>Zone de livraison *</span><select name="zone" id="selZone" required></select></label>
+      <label class="fld"><span>Adresse / quartier *</span><input type="text" name="adresse" required placeholder="Ex : Sacré-Cœur 3, villa 12"></label>
+      <label class="fld"><span>Remarque (facultatif)</span><textarea name="note" rows="2" placeholder="Heure de livraison souhaitée, précision sur la taille…"></textarea></label>
+      <div class="recap" id="recap"></div>
+      <button type="submit" class="btn btn--wa btn--full">Envoyer la commande sur WhatsApp</button>
+      <p class="modal__legal">Aucun paiement en ligne. Vous réglez au livreur.</p>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/main.js"></script>
+</body>
+</html>

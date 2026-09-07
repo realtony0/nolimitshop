@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 660 400" role="img" aria-label="Nolimit Shop — là où le style rencontre la tendance">
+  <g fill="currentColor" stroke="currentColor" transform="translate(230 10) scale(1)">
+    <path d="M38 64 V56a16 16 0 0 1 32 0v8" stroke-width="9" stroke-linecap="round" fill="none"/>
+    <path d="M24 66h56v54H24z" stroke="none"/>
+    <circle cx="38" cy="72" r="3.4" fill="#fff" stroke="none"/>
+    <path d="M130 64 V56a16 16 0 0 1 32 0v8" stroke-width="9" stroke-linecap="round" fill="none"/>
+    <path d="M120 66h56v54h-56z" stroke="none"/>
+    <circle cx="162" cy="72" r="3.4" fill="#fff" stroke="none"/>
+    <path d="M74 50 V34a26 26 0 0 1 52 0v16" stroke-width="12" stroke-linecap="round" fill="none"/>
+    <path d="M60 52h80l-6 74H66z" stroke="none"/>
+    <circle cx="74" cy="58" r="4" fill="#fff" stroke="none"/>
+    <circle cx="126" cy="58" r="4" fill="#fff" stroke="none"/>
+  </g>
+  <text x="330" y="230" text-anchor="middle" fill="currentColor"
+        font-family="Inter,Helvetica Neue,Arial,sans-serif" font-size="72" font-weight="700" letter-spacing="4">NOLIMIT SHOP</text>
+  <g stroke="currentColor" stroke-width="2">
+    <line x1="70" y1="272" x2="185" y2="272"/><line x1="475" y1="272" x2="590" y2="272"/>
+  </g>
+  <text x="330" y="280" text-anchor="middle" fill="currentColor"
+        font-family="Inter,Helvetica Neue,Arial,sans-serif" font-size="26" font-weight="500" letter-spacing="5">SNEAKERS  |  OUTFIT  |  ACCESSOIRES</text>
+  <text x="330" y="335" text-anchor="middle" fill="currentColor" opacity=".8"
+        font-family="Inter,Helvetica Neue,Arial,sans-serif" font-size="21" font-weight="400" letter-spacing="4">LÀ OÙ LE STYLE RENCONTRE LA TENDANCE</text>
+</svg>

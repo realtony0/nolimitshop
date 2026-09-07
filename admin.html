@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Back-office — Nolimit Shop</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/admin.css">
+</head>
+<body>
+
+<!-- ============================================================ CONNEXION -->
+<div class="gate" id="gate">
+  <form class="gate__box" id="gateForm">
+    <span class="logo__mark">N</span>
+    <h1>Back-office</h1>
+    <p>Espace réservé à la gestion de la boutique.</p>
+    <input type="password" id="gatePwd" placeholder="Mot de passe" autocomplete="current-password">
+    <button class="btn btn--primary btn--full" type="submit">Entrer</button>
+    <p class="gate__err" id="gateErr" hidden>Mot de passe incorrect.</p>
+    <p class="gate__hint">Mot de passe par défaut : <code>nolimit2026</code> — à changer dans l'onglet Réglages.</p>
+  </form>
+</div>
+
+<!-- ================================================================= APP -->
+<div class="app" id="app" hidden>
+
+  <aside class="side">
+    <div class="side__top">
+      <span class="logo__mark">N</span>
+      <div>
+        <b>Nolimit Shop</b>
+        <i>Back-office</i>
+      </div>
+    </div>
+    <nav class="side__nav" id="sideNav">
+      <button class="tab is-on" data-tab="board"><span>📊</span> Tableau de bord</button>
+      <button class="tab" data-tab="produits"><span>👕</span> Produits</button>
+      <button class="tab" data-tab="categories"><span>🏷️</span> Catégories</button>
+      <button class="tab" data-tab="livraison"><span>🚚</span> Livraison</button>
+      <button class="tab" data-tab="boutique"><span>🏪</span> Boutique</button>
+      <button class="tab" data-tab="faq"><span>❓</span> FAQ</button>
+      <button class="tab tab--pub" data-tab="publier"><span>🚀</span> Publier</button>
+    </nav>
+    <div class="side__foot">
+      <a href="index.html" target="_blank" rel="noopener">Voir la boutique ↗</a>
+      <button id="btnLogout">Se déconnecter</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="bar">
+      <button class="burger" id="burger" aria-label="Menu"><span></span><span></span><span></span></button>
+      <h1 id="pageTitre">Tableau de bord</h1>
+      <div class="bar__act">
+        <span class="dot" id="dirty" hidden>Modifications non publiées</span>
+        <button class="btn btn--primary btn--sm" id="btnGoPub">Publier</button>
+      </div>
+    </header>
+
+    <div class="page" id="page"></div>
+  </main>
+</div>
+
+<!-- ================================================= MODALE FICHE PRODUIT -->
+<div class="ovl" id="ovlEdit" hidden>
+  <div class="sheet" role="dialog" aria-modal="true">
+    <header class="sheet__hd">
+      <h2 id="editTitre">Modifier l'article</h2>
+      <button class="x" data-close aria-label="Fermer">&times;</button>
+    </header>
+    <div class="sheet__body" id="editBody"></div>
+    <footer class="sheet__ft">
+      <button class="btn btn--ghost" data-close>Annuler</button>
+      <button class="btn btn--primary" id="btnSaveP">Enregistrer</button>
+    </footer>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/admin.js"></script>
+</body>
+</html>

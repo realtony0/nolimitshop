@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 140" fill="none" role="img" aria-label="Nolimit Shop">
+  <g fill="currentColor" stroke="currentColor">
+    <!-- sac gauche -->
+    <path d="M38 64 V56a16 16 0 0 1 32 0v8" stroke-width="9" stroke-linecap="round" fill="none"/>
+    <path d="M24 66h56v54H24z" stroke="none"/>
+    <circle cx="38" cy="72" r="3.4" fill="#fff" stroke="none"/>
+    <!-- sac droit -->
+    <path d="M130 64 V56a16 16 0 0 1 32 0v8" stroke-width="9" stroke-linecap="round" fill="none"/>
+    <path d="M120 66h56v54h-56z" stroke="none"/>
+    <circle cx="162" cy="72" r="3.4" fill="#fff" stroke="none"/>
+    <!-- sac central -->
+    <path d="M74 50 V34a26 26 0 0 1 52 0v16" stroke-width="12" stroke-linecap="round" fill="none"/>
+    <path d="M60 52h80l-6 74H66z" stroke="none"/>
+    <circle cx="74" cy="58" r="4" fill="#fff" stroke="none"/>
+    <circle cx="126" cy="58" r="4" fill="#fff" stroke="none"/>
+  </g>
+</svg>
