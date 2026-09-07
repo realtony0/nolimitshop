@@ -1,0 +1,12 @@
+name = "nolimit-shop"
+pages_build_output_dir = "."
+compatibility_date = "2026-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "nolimit-shop-db"
+database_id = "5a338390-6184-4d64-ac1b-4b7c3fdd8534"
+
+[[r2_buckets]]
+binding = "PHOTOS"
+bucket_name = "nolimit-shop-photos"

@@ -4,23 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Nolimit Shop — Chemises &amp; polos oversize à Dakar</title>
-<meta name="description" content="Nolimit Shop : chemises et polos oversize à Dakar. Pièces sélectionnées, livraison 24h à Dakar, paiement à la livraison. Commande sur WhatsApp.">
+<meta name="description" content="Nolimit Shop : chemises et polos oversize à Dakar. Pièces sélectionnées une par une. Commande sur WhatsApp.">
 <meta name="theme-color" content="#000000">
 <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
 
 <meta property="og:type" content="website">
 <meta property="og:title" content="Nolimit Shop — Là où le style rencontre la tendance">
-<meta property="og:description" content="Chemises &amp; polos oversize à Dakar. Livraison 24h, paiement à la livraison.">
+<meta property="og:description" content="Chemises &amp; polos oversize à Dakar. Commande sur WhatsApp.">
 <meta property="og:image" content="assets/img/og-image.jpg">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/style.css?v=202609071622">
 </head>
 <body>
-
-<div class="topbar"><div class="topbar__track" id="topbarTrack"></div></div>
 
 <!-- =============================================================== HEADER -->
 <header class="hdr" id="hdr">
@@ -74,16 +72,11 @@
         <span class="accent">sans limite</span>
         <span>à Dakar</span>
       </h1>
-      <p class="hero__p">Chemises et polos oversize sélectionnés pièce par pièce. Paiement à la livraison, partout au Sénégal.</p>
+      <p class="hero__p">Chemises et polos oversize sélectionnés pièce par pièce.</p>
       <div class="hero__cta">
         <a href="#catalogue" class="btn btn--blanc">Découvrir →</a>
         <a href="#" class="btn btn--ligne" data-wa="Bonjour Nolimit Shop 👋 J'aimerais des conseils pour choisir un article.">WhatsApp</a>
       </div>
-      <ul class="hero__pills">
-        <li>🚚 Livraison 24h à Dakar</li>
-        <li>💵 Paiement à la livraison</li>
-        <li>🔁 Échange sous 48h</li>
-      </ul>
     </div>
     <div class="hero__media" id="heroMedia"></div>
   </div>
@@ -159,7 +152,7 @@
 <section class="cta" id="contact">
   <div class="wrap">
     <h2 class="cta__t">Une question ? On répond tout de suite</h2>
-    <p class="cta__p">Taille, couleur, disponibilité, délai de livraison — écrivez-nous, une vraie personne vous répond.</p>
+    <p class="cta__p">Taille, couleur, disponibilité — écrivez-nous, une vraie personne vous répond.</p>
     <div class="cta__btns">
       <a href="#" class="btn btn--wa" data-wa="Bonjour Nolimit Shop 👋 J'ai une question.">Discuter sur WhatsApp</a>
       <a href="#" class="btn btn--ligne" id="telLink" style="color:#fff">Appeler la boutique</a>
@@ -178,7 +171,7 @@
         <h3>Boutique</h3>
         <a href="#categories">Catégories</a>
         <a href="#catalogue">Tous les articles</a>
-        <a href="#faq">Livraison &amp; échange</a>
+        <a href="#faq">FAQ</a>
       </div>
       <div>
         <h3>Contact</h3>
@@ -189,7 +182,7 @@
       </div>
       <div class="ftr__soc" id="ftrSoc"></div>
     </div>
-    <p class="ftr__copy">© <span id="year"></span> Nolimit Shop — Paiement à la livraison partout au Sénégal.</p>
+    <p class="ftr__copy">© <span id="year"></span> Nolimit Shop — Tous droits réservés.</p>
   </div>
 </footer>
 
@@ -215,7 +208,6 @@
     <div class="drawer__body" id="cartBody"></div>
     <footer class="drawer__ft" id="cartFoot" hidden>
       <div class="line"><span>Sous-total</span><b id="cartSub">0 FCFA</b></div>
-      <p class="drawer__note">Les frais de livraison sont calculés à l'étape suivante.</p>
       <button class="btn btn--noir btn--full" id="btnCheckout">Commander</button>
       <button class="linkbtn" id="btnClear">Vider le panier</button>
     </footer>
@@ -227,24 +219,23 @@
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="cmdTitre" style="max-width:560px">
     <button class="modal__x" data-close aria-label="Fermer">&times;</button>
     <h2 class="modal__t" id="cmdTitre">Finaliser la commande</h2>
-    <p class="modal__st">La commande part sur notre WhatsApp. <b>Vous payez à la livraison.</b></p>
+    <p class="modal__st">La commande part sur notre WhatsApp — on vous recontacte pour confirmer les détails.</p>
 
     <form id="formCmd" novalidate>
       <label class="fld"><span>Nom complet *</span><input type="text" name="nom" required placeholder="Ex : Awa Diallo"></label>
       <label class="fld"><span>Téléphone (WhatsApp) *</span><input type="tel" name="tel" required placeholder="Ex : 77 123 45 67"></label>
-      <label class="fld"><span>Zone de livraison *</span><select name="zone" id="selZone" required></select></label>
       <label class="fld"><span>Adresse / quartier *</span><input type="text" name="adresse" required placeholder="Ex : Sacré-Cœur 3, villa 12"></label>
-      <label class="fld"><span>Remarque (facultatif)</span><textarea name="note" rows="2" placeholder="Heure de livraison souhaitée, précision sur la taille…"></textarea></label>
+      <label class="fld"><span>Remarque (facultatif)</span><textarea name="note" rows="2" placeholder="Précision sur la taille, la couleur…"></textarea></label>
       <div class="recap" id="recap"></div>
       <button type="submit" class="btn btn--wa btn--full">Envoyer la commande sur WhatsApp</button>
-      <p class="modal__legal">Aucun paiement en ligne. Vous réglez au livreur.</p>
+      <p class="modal__legal">Aucun paiement en ligne — tout se règle directement avec la boutique.</p>
     </form>
   </div>
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="assets/js/config.js"></script>
-<script src="assets/js/main.js"></script>
+<script src="assets/js/config.js?v=202609071622"></script>
+<script src="assets/js/main.js?v=202609071622"></script>
 </body>
 </html>

@@ -78,12 +78,6 @@ button{ cursor:pointer; background:none; border:0; }
 .btn[disabled]{ opacity:.4; pointer-events:none; }
 .linkbtn{ display:block; width:100%; text-align:center; margin-top:12px; font-size:.8rem; color:var(--ink-3); text-decoration:underline; }
 
-/* -------------------------------------------------------------- BANDEAU */
-.topbar{ background:var(--accent-2); color:#431407; font-size:.76rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; overflow:hidden; }
-.topbar__track{ display:flex; gap:44px; padding:9px 0; white-space:nowrap; width:max-content; animation:slide 28s linear infinite; }
-@keyframes slide{ to{ transform:translateX(-50%); } }
-@media (prefers-reduced-motion:reduce){ .topbar__track{ animation:none; } }
-
 /* --------------------------------------------------------------- HEADER */
 .hdr{ position:sticky; top:0; z-index:60; background:rgba(0,0,0,.95); backdrop-filter:blur(10px); color:#fff; }
 .hdr__in{ height:var(--hdr-h); display:flex; align-items:center; gap:18px; }
@@ -120,9 +114,7 @@ button{ cursor:pointer; background:none; border:0; }
 .hero__t{ font-size:clamp(2.7rem,13vw,5.6rem); margin-bottom:20px; }
 .hero__t span{ display:block; }
 .hero__p{ color:#9ca3af; font-size:1rem; max-width:44ch; margin-bottom:28px; }
-.hero__cta{ display:flex; flex-wrap:wrap; gap:12px; margin-bottom:30px; }
-.hero__pills{ display:flex; flex-wrap:wrap; gap:8px; padding-bottom:44px; }
-.hero__pills li{ border:1px solid rgba(255,255,255,.18); border-radius:999px; padding:7px 14px; font-size:.76rem; color:#d1d5db; }
+.hero__cta{ display:flex; flex-wrap:wrap; gap:12px; margin-bottom:44px; }
 .hero__media{ position:relative; margin-inline:-20px; }
 .hero__media img{ width:100%; aspect-ratio:1/1; object-fit:contain; background:#fff; padding:14px; }
 .hero__tag{
@@ -133,7 +125,7 @@ button{ cursor:pointer; background:none; border:0; }
   .hero{ padding-top:70px; }
   .hero__in{ grid-template-columns:1.05fr .95fr; gap:50px; }
   .hero__media{ margin-inline:0; border-radius:2px; overflow:hidden; }
-  .hero__pills{ padding-bottom:70px; }
+  .hero__cta{ margin-bottom:70px; }
 }
 
 /* ------------------------------------------------------------- SECTIONS */

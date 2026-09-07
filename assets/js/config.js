@@ -21,29 +21,18 @@ window.CONFIG = {
     whatsapp: "221770321603",
     // Lien WhatsApp court de la boutique (utilisé tant que le numéro est vide).
     whatsappLien: "https://wa.me/message/Z65TGEO5YBMUD1",
-    telephone: "+221 77 000 00 00",
-    email: "contact@nolimitshop.sn",
+    // Laisser vide "" tant que l'information n'est pas confirmée : le site
+    // n'affiche que ce qui est réellement renseigné ici, rien n'est deviné.
+    telephone: "",
+    email: "",
     adresse: "Dakar, Sénégal",
-    horaires: "Tous les jours de 9h à 21h",
+    horaires: "",
 
     // Laisser vide "" pour cacher le lien
     instagram: "https://www.instagram.com/no_limite_shop221",
     tiktok: "https://www.tiktok.com/@nolimiteshop3",
     snapchat: "https://snapchat.com/t/cJXjTP5j",
     facebook: ""
-  },
-
-  /* --------------------------------------------------------------- LIVRAISON
-     Les zones apparaissent dans le formulaire de commande.
-     frais : en FCFA (mettre 0 pour "gratuit")
-  -------------------------------------------------------------------------- */
-  livraison: {
-    gratuiteApartir: 50000,   // livraison offerte au-dessus de ce montant (0 = désactivé)
-    zones: [
-      { id: "dakar",    nom: "Dakar (centre)",          frais: 1500, delai: "24h" },
-      { id: "banlieue", nom: "Banlieue dakaroise",      frais: 2000, delai: "24h" },
-      { id: "regions",  nom: "Régions (autres villes)", frais: 3000, delai: "48 à 72h" }
-    ]
   },
 
   /* -------------------------------------------------------------- CATÉGORIES
@@ -174,10 +163,11 @@ window.CONFIG = {
      Les 4 blocs "pourquoi nous choisir" affichés sous le catalogue.
   -------------------------------------------------------------------------- */
   atouts: [
-    { icone: "truck",  titre: "Livraison rapide",      texte: "24h à Dakar et banlieue, 48-72h dans les autres régions." },
-    { icone: "cash",   titre: "Payez à la livraison",  texte: "Vous ne payez qu'une fois le colis entre vos mains." },
     { icone: "check",  titre: "Qualité vérifiée",      texte: "Chaque article est contrôlé avant l'expédition." },
-    { icone: "chat",   titre: "Conseil sur WhatsApp",  texte: "Une question sur la taille ? On répond en quelques minutes." }
+    { icone: "chat",   titre: "Conseil sur WhatsApp",  texte: "Une question sur la taille ? Écrivez-nous directement." }
+    // Ajouter ici un argument (livraison, paiement, échange...) seulement une
+    // fois la politique réellement décidée — ne jamais deviner un délai ou un
+    // mode de paiement qui n'a pas été confirmé.
   ],
 
   /* ---------------------------------------------------------------- AVIS
@@ -194,23 +184,14 @@ window.CONFIG = {
   faq: [
     {
       q: "Comment passer commande ?",
-      r: "Ajoutez vos articles au panier, cliquez sur « Commander », remplissez vos coordonnées : votre commande part directement sur notre WhatsApp. Nous vous confirmons ensuite le rendez-vous de livraison."
-    },
-    {
-      q: "Quand est-ce que je paie ?",
-      r: "À la livraison, en espèces au livreur. Wave et Orange Money sont aussi acceptés si vous préférez."
-    },
-    {
-      q: "Quels sont les délais de livraison ?",
-      r: "24h à Dakar et en banlieue, 48 à 72h pour les autres régions du Sénégal."
-    },
-    {
-      q: "Puis-je échanger un article ?",
-      r: "Oui, l'échange est possible sous 48h si l'article n'a pas été porté et qu'il a encore son étiquette. Une erreur de taille se règle sans problème."
+      r: "Ajoutez vos articles au panier, cliquez sur « Commander », remplissez vos coordonnées : votre commande part directement sur notre WhatsApp. On vous recontacte ensuite pour confirmer les détails (livraison, paiement)."
     },
     {
       q: "Comment choisir ma taille ?",
       r: "Chaque fiche produit indique les tailles disponibles. En cas de doute, écrivez-nous sur WhatsApp avec votre taille habituelle, nous vous conseillons."
     }
+    // Pour ajouter une question sur les délais, le paiement ou les échanges,
+    // copier un bloc { q: "...", r: "..." } ci-dessus — mais uniquement avec
+    // une réponse vraie et confirmée par la boutique, jamais une estimation.
   ]
 };

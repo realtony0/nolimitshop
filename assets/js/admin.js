@@ -1,14 +1,10 @@
 /* ==========================================================================
    NOLIMIT SHOP — BACK-OFFICE
    --------------------------------------------------------------------------
-   Gère le contenu du site (produits, catégories, livraison, boutique, FAQ)
-   et publie les changements en réécrivant assets/js/config.js directement
-   sur le disque, via l'accès au dossier du site donné par le navigateur
-   (File System Access API — Chrome / Edge). Sans ce dossier connecté, la
-   publication se fait en copiant/téléchargeant le code généré.
-
-   ⚠️ Cette page n'est pas protégée par une vraie sécurité serveur : le mot
-   de passe empêche seulement les curieux. Ne partage pas ce lien.
+   Gère le contenu du site (produits, catégories, boutique, FAQ, avis) dans la
+   base de données, via l'API (/api/...). Chaque modification est enregistrée
+   immédiatement : il n'y a pas d'étape « publier ».
+   Les photos sont envoyées dans le stockage R2 et servies par /img/<clé>.
    ========================================================================== */
 (() => {
 'use strict';
@@ -19,32 +15,46 @@ const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const esc = s => String(s).replace(/[&<>"']/g, c =>
   ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 const fcfa = n => new Intl.NumberFormat('fr-FR').format(Math.round(n || 0)) + ' FCFA';
-const slugify = s => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
-  .replace(/[^a-z0-9]+/g, '-').replace(/(^-+|-+$)/g, '');
-const uid = () => Math.random().toString(36).slice(2, 8);
 
-const PWD_KEY   = 'nolimit_admin_pwd';
-const DRAFT_KEY = 'nolimit_admin_draft';
-const DIRTY_KEY = 'nolimit_admin_dirty';
-const AUTH_KEY  = 'nolimit_admin_auth';
-const DEFAULT_PWD = 'nolimit2026';
-
+const AUTH_KEY = 'nolimit_admin_pwd';
 const TITRES = {
-  board: 'Tableau de bord', produits: 'Produits', categories: 'Catégories',
-  livraison: 'Livraison', boutique: 'Boutique', faq: 'FAQ & avis', publier: 'Publier'
+  board: 'Tableau de bord', produits: 'Produits',
+  categories: 'Catégories', boutique: 'Boutique', faq: 'FAQ & avis'
 };
 const GROUP_KEY = { epTailles: 'tailles', epCouleurs: 'couleurs', epDetails: 'details' };
 
-let draft = null;          // copie de travail de window.CONFIG
-let dirty = localStorage.getItem(DIRTY_KEY) === '1';
+let motdepasse = sessionStorage.getItem(AUTH_KEY) || '';
+let data = { boutique: {}, categories: [], produits: [], faq: [], avis: [] };
 let tab = 'board';
 let rechercheP = '';
-let editingId = null;      // null = nouvel article
+let editingId = null;
 let editingProduit = null;
-let dirHandle = null;
-let cacheBust = Date.now();
 
-/* ---------------------------------------------------------------- TOAST */
+/* ------------------------------------------------------------------ RÉSEAU */
+async function api(chemin, options = {}) {
+  const opts = { ...options, headers: { ...(options.headers || {}) } };
+  if (motdepasse) opts.headers.authorization = `Bearer ${motdepasse}`;
+  if (opts.body && !(opts.body instanceof FormData)) {
+    opts.headers['content-type'] = 'application/json';
+    opts.body = JSON.stringify(opts.body);
+  }
+  const r = await fetch(`/api${chemin}`, opts);
+  let corps = null;
+  try { corps = await r.json(); } catch (e) { /* réponse sans JSON */ }
+  if (!r.ok) throw new Error((corps && corps.erreur) || `Erreur ${r.status}`);
+  return corps;
+}
+
+let etatTimer;
+function etat(msg, isErr) {
+  const el = $('#etat');
+  el.textContent = msg;
+  el.hidden = false;
+  el.style.color = isErr ? 'var(--danger)' : '';
+  clearTimeout(etatTimer);
+  etatTimer = setTimeout(() => { el.hidden = true; }, isErr ? 6000 : 2200);
+}
+
 let toastTimer;
 function toast(msg, isErr) {
   const t = $('#toast');
@@ -55,7 +65,21 @@ function toast(msg, isErr) {
   toastTimer = setTimeout(() => t.classList.remove('is-on'), 3400);
 }
 
-/* ------------------------------------------------------------- OUVERTURE */
+/* Enveloppe les appels qui modifient : affiche l'état et récupère les erreurs. */
+async function enregistrer(action, message = 'Enregistré ✓') {
+  try {
+    etat('Enregistrement…');
+    const res = await action();
+    etat(message);
+    return res;
+  } catch (e) {
+    etat('Échec', true);
+    toast(e.message, true);
+    throw e;
+  }
+}
+
+/* ------------------------------------------------------------- MODALE */
 function ouvrir(sel) { $(sel).hidden = false; document.body.classList.add('lock'); }
 function fermerTout() {
   $$('.ovl').forEach(o => o.hidden = true);
@@ -63,170 +87,26 @@ function fermerTout() {
   editingId = null; editingProduit = null;
 }
 
-/* ------------------------------------------------------------- CHEMIN(S)
-   Petit utilitaire pour lire/écrire une valeur dans draft via un chemin du
-   type "boutique.nom" ou "livraison.zones.0.frais". */
-function getPath(obj, path) { return path.split('.').reduce((o, k) => (o == null ? undefined : o[k]), obj); }
-function setPath(obj, path, val) {
-  const parts = path.split('.');
-  const last = parts.pop();
-  const target = parts.reduce((o, k) => (o[k] ??= {}), obj);
-  target[last] = val;
+/* --------------------------------------------------------------- CHARGEMENT */
+async function charger() {
+  const cfg = await api('/config');
+  data = {
+    boutique: cfg.boutique || {},
+    categories: cfg.categories || [],
+    produits: cfg.produits || [],
+    faq: cfg.faq || [],
+    avis: cfg.avis || []
+  };
 }
 
-/* ------------------------------------------------------------ AUTHENTIFICATION */
-const loadPwd  = () => localStorage.getItem(PWD_KEY) || DEFAULT_PWD;
-const savePwd  = p  => localStorage.setItem(PWD_KEY, p);
-const checkAuth = () => sessionStorage.getItem(AUTH_KEY) === '1';
-function doLogin(pwd) {
-  if (pwd === loadPwd()) { sessionStorage.setItem(AUTH_KEY, '1'); afficherApp(); return true; }
-  return false;
-}
-function doLogout() { sessionStorage.removeItem(AUTH_KEY); location.reload(); }
+const catNom = id => (data.categories.find(c => c.id === id) || {}).nom || id;
 
-/* ------------------------------------------------------------------- BROUILLON */
-function loadDraft() {
-  try {
-    const raw = localStorage.getItem(DRAFT_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch (e) { /* brouillon corrompu : on repart du fichier publié */ }
-  return JSON.parse(JSON.stringify(window.CONFIG));
-}
-function saveDraftLocal() {
-  localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
-  dirty = true; localStorage.setItem(DIRTY_KEY, '1');
-  majDirty();
-}
-function majDirty() { $('#dirty').hidden = !dirty; }
-
-/* ------------------------------------------------------- DOSSIER DU SITE
-   File System Access API : on garde le handle du dossier du site (celui qui
-   contient index.html) dans IndexedDB pour ne le redemander qu'une fois. */
-function idbOpen() {
-  return new Promise((res, rej) => {
-    const r = indexedDB.open('nolimit_admin', 1);
-    r.onupgradeneeded = () => r.result.createObjectStore('handles');
-    r.onsuccess = () => res(r.result);
-    r.onerror = () => rej(r.error);
-  });
-}
-async function idbSet(key, val) {
-  const db = await idbOpen();
-  return new Promise((res, rej) => {
-    const tx = db.transaction('handles', 'readwrite');
-    tx.objectStore('handles').put(val, key);
-    tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error);
-  });
-}
-async function idbGet(key) {
-  const db = await idbOpen();
-  return new Promise((res, rej) => {
-    const tx = db.transaction('handles', 'readonly');
-    const rq = tx.objectStore('handles').get(key);
-    rq.onsuccess = () => res(rq.result); rq.onerror = () => rej(rq.error);
-  });
-}
-
-async function restaurerDossier() {
-  try {
-    const handle = await idbGet('site');
-    if (handle) dirHandle = handle;
-  } catch (e) { /* pas grave : on redemandera */ }
-}
-
-async function connecterDossier() {
-  if (!window.showDirectoryPicker) {
-    toast("Ce navigateur ne permet pas la publication automatique. Utilise Chrome ou Edge, ou publie à la main plus bas.", true);
-    return;
-  }
-  try {
-    const handle = await window.showDirectoryPicker({ id: 'nolimit-site', mode: 'readwrite' });
-    await handle.getFileHandle('index.html'); // vérifie que c'est le bon dossier
-    dirHandle = handle;
-    await idbSet('site', handle);
-    toast('Dossier du site connecté ✓');
-  } catch (e) {
-    if (e.name !== 'AbortError') {
-      toast("Impossible d'utiliser ce dossier — choisis le dossier qui contient index.html.", true);
-    }
-  }
-  if (tab === 'publier') render();
-}
-
-async function verifierPermission(handle) {
-  const opts = { mode: 'readwrite' };
-  if ((await handle.queryPermission(opts)) === 'granted') return true;
-  if ((await handle.requestPermission(opts)) === 'granted') return true;
-  return false;
-}
-
-async function ecrireFichier(dir, chemin, contenu) {
-  const parts = chemin.split('/');
-  const nom = parts.pop();
-  let cur = dir;
-  for (const p of parts) cur = await cur.getDirectoryHandle(p, { create: true });
-  const fh = await cur.getFileHandle(nom, { create: true });
-  const w = await fh.createWritable();
-  await w.write(contenu);
-  await w.close();
-}
-
-function genererConfigJs(cfg) {
-  return `/* ==========================================================================
-   NOLIMIT SHOP — FICHIER DE CONFIGURATION
-   --------------------------------------------------------------------------
-   ⚠️ Généré automatiquement par le back-office (admin.html).
-   Toute modification faite ici à la main sera écrasée à la prochaine
-   publication. Pour changer le contenu du site, utilise le back-office.
-   Dernière publication : ${new Date().toLocaleString('fr-FR')}
-   ========================================================================== */
-
-window.CONFIG = ${JSON.stringify(cfg, null, 2)};
-`;
-}
-
-async function publier() {
-  if (!dirHandle) { toast("Connecte d'abord le dossier du site (onglet Publier).", true); return; }
-  const ok = await verifierPermission(dirHandle);
-  if (!ok) { toast('Autorisation refusée par le navigateur.', true); return; }
-  try {
-    await ecrireFichier(dirHandle, 'assets/js/config.js', genererConfigJs(draft));
-    dirty = false; localStorage.setItem(DIRTY_KEY, '0'); majDirty();
-    toast('Site publié ✓ — rafraîchis la page de la boutique pour voir les changements');
-  } catch (e) {
-    console.error(e);
-    toast('Erreur pendant la publication : ' + e.message, true);
-  }
-}
-
-async function ajouterPhotos(files, baseId) {
-  if (!dirHandle) { toast('Connecte le dossier du site (onglet Publier) pour ajouter des photos.', true); return []; }
-  const ok = await verifierPermission(dirHandle);
-  if (!ok) { toast('Autorisation refusée par le navigateur.', true); return []; }
-  const chemins = [];
-  let i = 1;
-  for (const f of files) {
-    const ext = (f.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
-    const nom = `${baseId || 'article'}-${Date.now()}-${i}.${ext}`;
-    try {
-      await ecrireFichier(dirHandle, `assets/img/${nom}`, f);
-      chemins.push(`assets/img/${nom}`);
-    } catch (e) { console.error(e); toast('Échec pour ' + f.name, true); }
-    i++;
-  }
-  cacheBust = Date.now();
-  return chemins;
-}
-
-/* -------------------------------------------------------------- UTILITAIRES */
-function catNom(id) { const c = draft.categories.find(x => x.id === id); return c ? c.nom : id; }
-
-/* -------------------------------------------------------------- PRODUITS */
+/* ---------------------------------------------------------------- PRODUITS */
 function rowProduitHtml(p) {
   const img = (p.images || [])[0];
   return `<div class="prow">
     <div class="prow__img">${img
-      ? `<img src="${esc(img)}?t=${cacheBust}" alt="" onerror="this.remove()">`
+      ? `<img src="${esc(img)}" alt="" onerror="this.remove()">`
       : `<i>${esc((p.nom || '?').charAt(0).toUpperCase())}</i>`}</div>
     <div class="prow__in">
       <p class="prow__nom">${esc(p.nom)}
@@ -244,29 +124,33 @@ function rowProduitHtml(p) {
   </div>`;
 }
 
-function renderProduits() {
+function listeProduitsHtml() {
   const q = rechercheP.trim().toLowerCase();
-  const liste = draft.produits.filter(p => !q || (p.nom + ' ' + catNom(p.categorie)).toLowerCase().includes(q));
+  const liste = data.produits.filter(p => !q || (p.nom + ' ' + catNom(p.categorie)).toLowerCase().includes(q));
+  return liste.map(rowProduitHtml).join('') ||
+    '<p style="color:var(--ink-3);text-align:center;padding:30px 0">Aucun article ne correspond.</p>';
+}
+
+function renderProduits() {
   return `
     <div class="tools">
-      <input type="search" id="rechP" placeholder="Rechercher un article…" value="${esc(rechercheP)}" style="flex:1 1 220px;padding:11px 15px;border-radius:11px;border:1px solid var(--line-2);background:#fff;outline:none">
+      <input type="search" id="rechP" placeholder="Rechercher un article…" value="${esc(rechercheP)}"
+        style="flex:1 1 220px;padding:11px 15px;border-radius:11px;border:1px solid var(--line-2);background:#fff;outline:none">
       <button type="button" class="btn btn--primary" data-newp="1">+ Ajouter un article</button>
     </div>
-    <div class="plist" id="plistBox">${liste.map(rowProduitHtml).join('') || '<p style="color:var(--ink-3);text-align:center;padding:30px 0">Aucun article ne correspond.</p>'}</div>
-  `;
+    <div class="plist" id="plistBox">${listeProduitsHtml()}</div>`;
 }
+
 function bindProduitsSearch() {
   const el = $('#rechP');
   if (!el) return;
   el.addEventListener('input', () => {
     rechercheP = el.value;
-    const q = rechercheP.trim().toLowerCase();
-    const liste = draft.produits.filter(p => !q || (p.nom + ' ' + catNom(p.categorie)).toLowerCase().includes(q));
-    $('#plistBox').innerHTML = liste.map(rowProduitHtml).join('') || '<p style="color:var(--ink-3);text-align:center;padding:30px 0">Aucun article ne correspond.</p>';
+    $('#plistBox').innerHTML = listeProduitsHtml();
   });
 }
 
-/* --------------------------------------------------------- FICHE PRODUIT */
+/* ----------------------------------------------------------- FICHE PRODUIT */
 function rowSimple(group, i, val, ph) {
   return `<div class="row">
     <label class="f" style="margin:0"><input type="text" value="${esc(val)}" placeholder="${esc(ph)}" data-rowinput="${group}:${i}"></label>
@@ -276,19 +160,19 @@ function rowSimple(group, i, val, ph) {
 function photoBox(src, i) {
   return `<div class="photo">
     <div class="photo__box">
-      <img src="${esc(src)}?t=${cacheBust}" alt="" onerror="this.parentElement.innerHTML='<div style=display:grid;place-items:center;height:100%;color:var(--ink-3);font-size:1.4rem>?</div>'">
+      <img src="${esc(src)}" alt="" onerror="this.parentElement.innerHTML='<div style=display:grid;place-items:center;height:100%;color:var(--ink-3)>?</div>'">
       <button type="button" class="photo__x" data-delphoto="${i}" title="Retirer">✕</button>
     </div>
-    <p class="photo__n">${esc(src.split('/').pop())}</p>
   </div>`;
 }
 function formProduitHtml(p) {
   return `
     <label class="f"><span>Nom de l'article *</span><input type="text" id="epNom" value="${esc(p.nom)}" placeholder="Ex : Chemise en lin"></label>
-    <label class="f"><span>Sous-titre</span><input type="text" id="epSt" value="${esc(p.sousTitre || '')}" placeholder="Ex : Manches longues, coupe droite"></label>
+    <label class="f"><span>Sous-titre</span><input type="text" id="epSt" value="${esc(p.sousTitre || '')}" placeholder="Ex : Coupe oversize"></label>
     <div class="f2">
-      <label class="f"><span>Catégorie</span>
-        <select id="epCat">${draft.categories.map(c => `<option value="${esc(c.id)}" ${c.id === p.categorie ? 'selected' : ''}>${esc(c.nom)}</option>`).join('')}</select>
+      <label class="f"><span>Catégorie *</span>
+        <select id="epCat">${data.categories.map(c =>
+          `<option value="${esc(c.id)}" ${c.id === p.categorie ? 'selected' : ''}>${esc(c.nom)}</option>`).join('')}</select>
       </label>
       <label class="f"><span>Badge (facultatif)</span><input type="text" id="epBadge" value="${esc(p.badge || '')}" placeholder="Ex : Nouveau"></label>
     </div>
@@ -317,14 +201,17 @@ function formProduitHtml(p) {
         ${(p.images || []).map((src, i) => photoBox(src, i)).join('')}
         <label class="drop">+ Ajouter<input type="file" id="epUpload" accept="image/*" multiple hidden></label>
       </div>
-      <small>${dirHandle ? 'Les photos sont enregistrées directement dans assets/img.' : "⚠️ Connecte le dossier du site (onglet Publier) pour ajouter des photos depuis cet écran."}</small>
-    </div>
-  `;
+      <small>Les photos sont envoyées dans le stockage du site. Formats acceptés : JPG, PNG, WEBP — 8 Mo maximum.</small>
+    </div>`;
 }
 
 function openProduitEditor(id) {
-  const base = id ? draft.produits.find(p => p.id === id) : {
-    id: '', nom: '', sousTitre: '', categorie: (draft.categories[0] || {}).id || '',
+  if (!data.categories.length) {
+    toast("Crée d'abord une catégorie dans l'onglet Catégories.", true);
+    return;
+  }
+  const base = id ? data.produits.find(p => p.id === id) : {
+    id: '', nom: '', sousTitre: '', categorie: data.categories[0].id,
     prix: 0, prixBarre: 0, stock: true, vedette: false, badge: '',
     description: '', tailles: [], couleurs: [], details: [], images: []
   };
@@ -336,7 +223,7 @@ function openProduitEditor(id) {
   ouvrir('#ovlEdit');
 }
 
-function syncFormToEditingProduit() {
+function syncForm() {
   if (!editingProduit) return;
   if ($('#epNom'))   editingProduit.nom = $('#epNom').value.trim();
   if ($('#epSt'))    editingProduit.sousTitre = $('#epSt').value.trim();
@@ -347,201 +234,137 @@ function syncFormToEditingProduit() {
   if ($('#epStock')) editingProduit.stock = $('#epStock').checked;
   if ($('#epDesc'))  editingProduit.description = $('#epDesc').value.trim();
 }
+const redessinerFiche = () => { $('#editBody').innerHTML = formProduitHtml(editingProduit); };
 
-function reredessinerFiche() { $('#editBody').innerHTML = formProduitHtml(editingProduit); }
+async function saveProduit() {
+  syncForm();
+  const p = editingProduit;
+  if (!p.nom) { toast("Le nom de l'article est obligatoire.", true); return; }
+  if (!p.categorie) { toast('Choisis une catégorie.', true); return; }
+  if (!p.prix || p.prix <= 0) { toast('Indique un prix de vente.', true); return; }
 
-function saveProduit() {
-  syncFormToEditingProduit();
-  if (!editingProduit.nom) { toast("Le nom de l'article est obligatoire.", true); return; }
-  if (!editingProduit.categorie) { toast('Choisis une catégorie.', true); return; }
-  if (!editingProduit.prix || editingProduit.prix <= 0) { toast('Indique un prix de vente.', true); return; }
+  /* on retire les lignes vides laissées dans les listes */
+  ['tailles', 'couleurs', 'details'].forEach(k => {
+    p[k] = (p[k] || []).map(v => String(v).trim()).filter(Boolean);
+  });
 
-  if (!editingId) {
-    let base = slugify(editingProduit.nom) || 'article', id = base, n = 2;
-    while (draft.produits.some(p => p.id === id)) id = `${base}-${n++}`;
-    editingProduit.id = id;
-    draft.produits.push(editingProduit);
-  } else {
-    const idx = draft.produits.findIndex(p => p.id === editingId);
-    if (idx === -1) { toast('Article introuvable.', true); return; }
-    draft.produits[idx] = editingProduit;
-  }
-  saveDraftLocal();
+  await enregistrer(async () => {
+    if (editingId) await api(`/produits/${encodeURIComponent(editingId)}`, { method: 'PUT', body: p });
+    else await api('/produits', { method: 'POST', body: p });
+    await charger();
+  }, 'Article enregistré ✓');
+
   fermerTout();
   render();
-  toast('Article enregistré ✓ — pense à publier');
+  toast('Article enregistré ✓');
 }
 
-/* ------------------------------------------------------------ CATÉGORIES */
-function catRowHtml(c, i) {
-  const nb = draft.produits.filter(p => p.categorie === c.id).length;
+/* -------------------------------------------------------------- CATÉGORIES */
+function catRowHtml(c) {
+  const nb = data.produits.filter(p => p.categorie === c.id).length;
   return `<div class="row" style="flex-direction:column;align-items:stretch;gap:8px">
     <div style="display:flex;gap:8px;align-items:flex-end">
-      <label class="f" style="max-width:70px;margin:0"><span>Emoji</span><input type="text" data-bind="categories.${i}.emoji" value="${esc(c.emoji || '')}" maxlength="4"></label>
-      <label class="f" style="flex:1;margin:0"><span>Nom affiché</span><input type="text" data-bind="categories.${i}.nom" value="${esc(c.nom)}"></label>
-      <button type="button" class="row__x" data-delcat="${i}" title="Supprimer">✕</button>
+      <label class="f" style="max-width:70px;margin:0"><span>Emoji</span>
+        <input type="text" data-cat="${esc(c.id)}" data-champ="emoji" value="${esc(c.emoji || '')}" maxlength="4"></label>
+      <label class="f" style="flex:1;margin:0"><span>Nom affiché</span>
+        <input type="text" data-cat="${esc(c.id)}" data-champ="nom" value="${esc(c.nom)}"></label>
+      <button type="button" class="row__x" data-delcat="${esc(c.id)}" title="Supprimer">✕</button>
     </div>
-    <p style="font-size:.74rem;color:var(--ink-3);margin:0">${nb} article${nb > 1 ? 's' : ''} · id technique <code>${esc(c.id)}</code></p>
+    <p style="font-size:.74rem;color:var(--ink-3);margin:0">${nb} article${nb > 1 ? 's' : ''} · identifiant <code>${esc(c.id)}</code></p>
   </div>`;
 }
 function renderCategories() {
   return `
     <div class="card">
       <h2>Catégories</h2>
-      <p class="card__sub">Elles apparaissent comme filtres et vignettes sur le site, dans cet ordre. L'identifiant technique ne change pas pour ne pas perdre le lien avec les articles déjà classés.</p>
-      <div class="rows">${draft.categories.map(catRowHtml).join('') || '<p style="color:var(--ink-3)">Aucune catégorie.</p>'}</div>
+      <p class="card__sub">Elles apparaissent comme filtres et vignettes sur le site, dans cet ordre. Les modifications sont enregistrées dès que tu quittes le champ.</p>
+      <div class="rows">${data.categories.map(catRowHtml).join('') || '<p style="color:var(--ink-3)">Aucune catégorie pour l\'instant.</p>'}</div>
       <button type="button" class="btn btn--ghost btn--sm" data-addcat="1">+ Ajouter une catégorie</button>
-    </div>
-  `;
+    </div>`;
 }
 
-/* ------------------------------------------------------------- LIVRAISON */
-function zoneRowHtml(z, i) {
-  return `<div class="row" style="flex-wrap:wrap">
-    <label class="f" style="flex:2 1 160px;margin:0"><span>Nom de la zone</span><input type="text" data-bind="livraison.zones.${i}.nom" value="${esc(z.nom)}"></label>
-    <label class="f" style="flex:1 1 110px;margin:0"><span>Frais (FCFA)</span><input type="number" min="0" step="100" data-bind="livraison.zones.${i}.frais" value="${z.frais}"></label>
-    <label class="f" style="flex:1 1 110px;margin:0"><span>Délai</span><input type="text" data-bind="livraison.zones.${i}.delai" value="${esc(z.delai)}"></label>
-    <button type="button" class="row__x" data-delzone="${i}" title="Supprimer">✕</button>
-  </div>`;
-}
-function renderLivraison() {
-  return `
-    <div class="card">
-      <h2>Livraison gratuite</h2>
-      <label class="f"><span>Montant à partir duquel la livraison est offerte (0 = désactivé)</span>
-        <input type="number" min="0" step="500" data-bind="livraison.gratuiteApartir" value="${draft.livraison.gratuiteApartir || 0}"></label>
-    </div>
-    <div class="card">
-      <h2>Zones de livraison</h2>
-      <p class="card__sub">Elles apparaissent dans le menu déroulant au moment de la commande.</p>
-      <div class="rows">${draft.livraison.zones.map(zoneRowHtml).join('')}</div>
-      <button type="button" class="btn btn--ghost btn--sm" data-addzone="1">+ Ajouter une zone</button>
-    </div>
-  `;
-}
-
-/* -------------------------------------------------------------- BOUTIQUE */
+/* ---------------------------------------------------------------- BOUTIQUE */
 function renderBoutique() {
-  const b = draft.boutique;
+  const b = data.boutique;
+  const champ = (cle, label, ph = '') =>
+    `<label class="f"><span>${label}</span><input type="text" data-b="${cle}" value="${esc(b[cle] || '')}" placeholder="${esc(ph)}"></label>`;
   return `
     <div class="card">
       <h2>Identité</h2>
-      <div class="f2">
-        <label class="f"><span>Nom de la boutique</span><input type="text" data-bind="boutique.nom" value="${esc(b.nom)}"></label>
-        <label class="f"><span>Slogan</span><input type="text" data-bind="boutique.slogan" value="${esc(b.slogan || '')}"></label>
-      </div>
-      <label class="f"><span>Description courte</span><input type="text" data-bind="boutique.description" value="${esc(b.description || '')}"></label>
+      <div class="f2">${champ('nom', 'Nom de la boutique')}${champ('slogan', 'Slogan')}</div>
+      ${champ('description', 'Description courte')}
     </div>
     <div class="card">
       <h2>Contact &amp; commandes</h2>
       <div class="hint"><b>Numéro WhatsApp</b>
-        <p>Format international sans « + » ni espaces (ex : 221771234567). Dès qu'il est rempli, les commandes du site arrivent pré-remplies directement dans ton WhatsApp.</p>
+        <p>Format international sans « + » ni espaces (ex : 221771234567). C'est là qu'arrivent les commandes du site.</p>
       </div>
       <div class="f2">
-        <label class="f"><span>Numéro WhatsApp</span><input type="text" data-bind="boutique.whatsapp" value="${esc(b.whatsapp || '')}" placeholder="221771234567"></label>
-        <label class="f"><span>Lien WhatsApp court (repli si le numéro est vide)</span><input type="text" data-bind="boutique.whatsappLien" value="${esc(b.whatsappLien || '')}"></label>
+        ${champ('whatsapp', 'Numéro WhatsApp', '221771234567')}
+        ${champ('whatsappLien', 'Lien WhatsApp court (secours)')}
       </div>
-      <div class="f2">
-        <label class="f"><span>Téléphone affiché</span><input type="text" data-bind="boutique.telephone" value="${esc(b.telephone || '')}"></label>
-        <label class="f"><span>E-mail</span><input type="email" data-bind="boutique.email" value="${esc(b.email || '')}"></label>
-      </div>
-      <div class="f2">
-        <label class="f"><span>Adresse / ville</span><input type="text" data-bind="boutique.adresse" value="${esc(b.adresse || '')}"></label>
-        <label class="f"><span>Horaires</span><input type="text" data-bind="boutique.horaires" value="${esc(b.horaires || '')}"></label>
-      </div>
+      <div class="f2">${champ('telephone', 'Téléphone affiché')}${champ('email', 'E-mail')}</div>
+      <div class="f2">${champ('adresse', 'Adresse / ville')}${champ('horaires', 'Horaires')}</div>
     </div>
     <div class="card">
       <h2>Réseaux sociaux</h2>
       <p class="card__sub">Laisser vide pour cacher le lien sur le site.</p>
-      <div class="f2">
-        <label class="f"><span>Instagram</span><input type="text" data-bind="boutique.instagram" value="${esc(b.instagram || '')}"></label>
-        <label class="f"><span>TikTok</span><input type="text" data-bind="boutique.tiktok" value="${esc(b.tiktok || '')}"></label>
-      </div>
-      <div class="f2">
-        <label class="f"><span>Snapchat</span><input type="text" data-bind="boutique.snapchat" value="${esc(b.snapchat || '')}"></label>
-        <label class="f"><span>Facebook</span><input type="text" data-bind="boutique.facebook" value="${esc(b.facebook || '')}"></label>
-      </div>
+      <div class="f2">${champ('instagram', 'Instagram')}${champ('tiktok', 'TikTok')}</div>
+      <div class="f2">${champ('snapchat', 'Snapchat')}${champ('facebook', 'Facebook')}</div>
     </div>
     <div class="card">
       <h2>Sécurité</h2>
-      <p class="card__sub">Ce mot de passe protège uniquement l'accès à cette page depuis ce navigateur — ce n'est pas une sécurité serveur. Ne partage jamais le lien du back-office.</p>
+      <p class="card__sub">Mot de passe d'accès à ce back-office. Ne le partage pas.</p>
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
-        <label class="f" style="flex:1 1 200px;margin:0"><span>Nouveau mot de passe</span><input type="password" id="pwdNew" placeholder="4 caractères minimum"></label>
+        <label class="f" style="flex:1 1 200px;margin:0"><span>Nouveau mot de passe</span>
+          <input type="password" id="pwdNew" placeholder="6 caractères minimum"></label>
         <button type="button" class="btn btn--ghost btn--sm" id="btnPwdSave">Changer</button>
       </div>
-    </div>
-  `;
+    </div>`;
 }
 
-/* ------------------------------------------------------------------ FAQ */
+/* --------------------------------------------------------------- FAQ / AVIS */
 function renderFaq() {
   return `
     <div class="card">
       <h2>Questions fréquentes</h2>
-      <div class="rows">${draft.faq.map((f, i) => `
+      <div class="rows">${data.faq.map((f, i) => `
         <div class="row" style="flex-direction:column;align-items:stretch">
           <div style="display:flex;gap:8px;align-items:flex-start">
-            <label class="f" style="flex:1;margin:0"><span>Question</span><input type="text" data-bind="faq.${i}.q" value="${esc(f.q)}"></label>
+            <label class="f" style="flex:1;margin:0"><span>Question</span>
+              <input type="text" data-faq="${i}" data-champ="q" value="${esc(f.q)}"></label>
             <button type="button" class="row__x" data-delfaq="${i}" title="Supprimer">✕</button>
           </div>
-          <label class="f" style="margin:8px 0 0"><span>Réponse</span><textarea rows="2" data-bind="faq.${i}.r">${esc(f.r)}</textarea></label>
+          <label class="f" style="margin:8px 0 0"><span>Réponse</span>
+            <textarea rows="2" data-faq="${i}" data-champ="r">${esc(f.r)}</textarea></label>
         </div>`).join('') || '<p style="color:var(--ink-3)">Aucune question.</p>'}</div>
       <button type="button" class="btn btn--ghost btn--sm" data-addfaq="1">+ Ajouter une question</button>
     </div>
     <div class="card">
       <h2>Avis clients</h2>
       <p class="card__sub">N'ajoute que de vrais avis de vrais clients. Tant que la liste est vide, la section n'apparaît pas sur le site.</p>
-      <div class="rows">${draft.avis.map((a, i) => `
+      <div class="rows">${data.avis.map((a, i) => `
         <div class="row">
-          <label class="f" style="flex:2;margin:0"><span>Avis</span><input type="text" data-bind="avis.${i}.texte" value="${esc(a.texte)}"></label>
-          <label class="f" style="flex:1;margin:0"><span>Nom du client</span><input type="text" data-bind="avis.${i}.nom" value="${esc(a.nom)}"></label>
+          <label class="f" style="flex:2;margin:0"><span>Avis</span>
+            <input type="text" data-avis="${i}" data-champ="texte" value="${esc(a.texte)}"></label>
+          <label class="f" style="flex:1;margin:0"><span>Nom du client</span>
+            <input type="text" data-avis="${i}" data-champ="nom" value="${esc(a.nom)}"></label>
           <button type="button" class="row__x" data-delavis="${i}" title="Supprimer">✕</button>
         </div>`).join('') || '<p style="color:var(--ink-3)">Aucun avis pour l\'instant.</p>'}</div>
       <button type="button" class="btn btn--ghost btn--sm" data-addavis="1">+ Ajouter un avis</button>
-    </div>
-  `;
+    </div>`;
 }
 
-/* --------------------------------------------------------------- PUBLIER */
-function renderPublier() {
-  const supporte = !!window.showDirectoryPicker;
-  return `
-    ${!supporte ? `<div class="hint"><b>Ce navigateur ne permet pas la publication automatique.</b>
-      <p>Utilise Google Chrome ou Microsoft Edge pour publier en un clic. En attendant, copie le code ci-dessous dans <code>assets/js/config.js</code>.</p></div>` : ''}
-    <div class="card">
-      <h2>Dossier du site</h2>
-      <p class="card__sub">Connecte le dossier <code>nolimitshop</code> une seule fois (celui qui contient <code>index.html</code>). Le back-office pourra ensuite publier tes modifications directement dedans.</p>
-      <p style="margin-bottom:14px">${dirHandle ? `✅ Dossier connecté : <b>${esc(dirHandle.name)}</b>` : '⚠️ Aucun dossier connecté'}</p>
-      ${supporte ? `<button type="button" class="btn btn--ghost btn--sm" id="btnConnect">${dirHandle ? 'Reconnecter' : 'Connecter le dossier du site'}</button>` : ''}
-    </div>
-    <div class="card">
-      <h2>Publier les modifications</h2>
-      <p class="card__sub">Écrit le fichier <code>assets/js/config.js</code> avec tes derniers changements. Le site est mis à jour immédiatement.</p>
-      <button type="button" class="btn btn--ok btn--full" id="btnPublish" ${supporte && dirHandle ? '' : 'disabled'}>🚀 Publier maintenant</button>
-    </div>
-    <div class="card">
-      <h2>Publication manuelle</h2>
-      <p class="card__sub">Si tu préfères (ou si ton navigateur ne le permet pas) : copie ce code et colle-le dans <code>assets/js/config.js</code> à la place de tout le contenu, puis enregistre.</p>
-      <div class="code">${esc(genererConfigJs(draft))}</div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <button type="button" class="btn btn--ghost btn--sm" id="btnCopyCode">Copier le code</button>
-        <button type="button" class="btn btn--ghost btn--sm" id="btnDownloadCode">Télécharger config.js</button>
-      </div>
-    </div>
-  `;
-}
-
-/* ---------------------------------------------------------- TABLEAU DE BORD */
+/* ------------------------------------------------------------ TABLEAU DE BORD */
 function renderBoard() {
-  const total = draft.produits.length;
-  const rupture = draft.produits.filter(p => !p.stock).length;
-  const promo = draft.produits.filter(p => p.prixBarre > p.prix).length;
-  const valeur = draft.produits.reduce((s, p) => s + p.prix, 0);
+  const total = data.produits.length;
+  const rupture = data.produits.filter(p => !p.stock).length;
+  const promo = data.produits.filter(p => p.prixBarre > p.prix).length;
+  const valeur = data.produits.reduce((s, p) => s + p.prix, 0);
   return `
     <div class="hint">
-      <b>Comment ça marche</b>
-      <p>Modifie tes produits, prix, photos et informations dans les onglets à gauche. Rien n'est visible sur le site tant que tu n'as pas cliqué sur <b>Publier</b>.</p>
-      <p style="margin-top:8px">${dirHandle ? '✅ Dossier du site connecté — tu peux publier en un clic.' : "⚠️ Dossier du site non connecté — va dans l'onglet <b>Publier</b> pour le connecter."}</p>
+      <b>Tout est enregistré en direct</b>
+      <p>Chaque modification part immédiatement dans la base : le site est à jour dès que tu changes quelque chose. Pas d'étape « publier ».</p>
     </div>
     <div class="stats">
       <div class="stat"><b>${total}</b><span>Articles au catalogue</span></div>
@@ -552,15 +375,15 @@ function renderBoard() {
     <div class="card">
       <h2>Derniers articles</h2>
       <p class="card__sub">Aperçu rapide — l'onglet « Produits » permet de tout gérer.</p>
-      <div class="plist">${draft.produits.slice(0, 4).map(rowProduitHtml).join('') || '<p style="color:var(--ink-3)">Aucun article pour l\'instant.</p>'}</div>
-    </div>
-  `;
+      <div class="plist">${data.produits.slice(0, 4).map(rowProduitHtml).join('') ||
+        '<p style="color:var(--ink-3)">Aucun article pour l\'instant.</p>'}</div>
+    </div>`;
 }
 
-/* -------------------------------------------------------------- RENDU */
+/* -------------------------------------------------------------------- RENDU */
 const RENDERERS = {
-  board: renderBoard, produits: renderProduits, categories: renderCategories,
-  livraison: renderLivraison, boutique: renderBoutique, faq: renderFaq, publier: renderPublier
+  board: renderBoard, produits: renderProduits,
+  categories: renderCategories, boutique: renderBoutique, faq: renderFaq
 };
 function render() {
   $('#page').innerHTML = (RENDERERS[tab] || renderBoard)();
@@ -575,45 +398,66 @@ function goTab(t) {
   $('.side').classList.remove('is-open');
 }
 
+/* --------------------------------------------------------------- SAUVEGARDES */
+const sauverFaq  = () => enregistrer(() => api('/faq',  { method: 'PUT', body: data.faq }),  'FAQ enregistrée ✓');
+const sauverAvis = () => enregistrer(() => api('/avis', { method: 'PUT', body: data.avis }), 'Avis enregistrés ✓');
+const sauverBoutique = () => enregistrer(() => api('/boutique', { method: 'PUT', body: data.boutique }), 'Boutique enregistrée ✓');
+const sauverCategorie = c => enregistrer(
+  () => api(`/categories/${encodeURIComponent(c.id)}`, { method: 'PUT', body: { nom: c.nom, emoji: c.emoji } }),
+  'Catégorie enregistrée ✓');
+
 /* ------------------------------------------------------------- ÉVÉNEMENTS */
 function onInput(e) {
-  const bind = e.target.closest('[data-bind]');
-  if (bind) {
-    let val = bind.value;
-    if (bind.type === 'number') val = val === '' ? 0 : Number(val);
-    setPath(draft, bind.dataset.bind, val);
-    saveDraftLocal();
-    return;
-  }
-  const ri = e.target.closest('[data-rowinput]');
+  const t = e.target;
+
+  const ri = t.closest('[data-rowinput]');
   if (ri && editingProduit) {
     const [group, i] = ri.dataset.rowinput.split(':');
-    const key = GROUP_KEY[group];
-    editingProduit[key][+i] = ri.value;
+    editingProduit[GROUP_KEY[group]][+i] = ri.value;
+    return;
   }
+  const b = t.closest('[data-b]');       if (b)  { data.boutique[b.dataset.b] = b.value; return; }
+  const c = t.closest('[data-cat]');     if (c)  { const cat = data.categories.find(x => x.id === c.dataset.cat); if (cat) cat[c.dataset.champ] = c.value; return; }
+  const f = t.closest('[data-faq]');     if (f)  { data.faq[+f.dataset.faq][f.dataset.champ] = f.value; return; }
+  const a = t.closest('[data-avis]');    if (a)  { data.avis[+a.dataset.avis][a.dataset.champ] = a.value; return; }
 }
 
-function onChange(e) {
-  const bind = e.target.closest('[data-bind]');
-  if (bind && (bind.tagName === 'SELECT' || bind.type === 'checkbox')) {
-    const val = bind.type === 'checkbox' ? bind.checked : bind.value;
-    setPath(draft, bind.dataset.bind, val);
-    saveDraftLocal();
+/* On enregistre quand l'utilisateur quitte le champ, pas à chaque frappe. */
+function onBlur(e) {
+  const t = e.target;
+  if (t.closest('[data-b]'))    { sauverBoutique().catch(() => {}); return; }
+  if (t.closest('[data-faq]'))  { sauverFaq().catch(() => {}); return; }
+  if (t.closest('[data-avis]')) { sauverAvis().catch(() => {}); return; }
+  const c = t.closest('[data-cat]');
+  if (c) {
+    const cat = data.categories.find(x => x.id === c.dataset.cat);
+    if (cat) sauverCategorie(cat).catch(() => {});
   }
 }
 
 async function onFileChange(e) {
   if (e.target.id !== 'epUpload' || !editingProduit) return;
-  const files = [...e.target.files];
-  if (!files.length) return;
-  if (!dirHandle) { toast('Connecte le dossier du site (onglet Publier) pour ajouter des photos.', true); return; }
-  syncFormToEditingProduit();
-  toast('Enregistrement des photos…');
-  const base = editingProduit.id || slugify(editingProduit.nom || 'article');
-  const chemins = await ajouterPhotos(files, base);
-  editingProduit.images.push(...chemins);
-  reredessinerFiche();
-  if (chemins.length) toast(`${chemins.length} photo(s) ajoutée(s) ✓`);
+  const fichiers = [...e.target.files];
+  if (!fichiers.length) return;
+  syncForm();
+
+  etat('Envoi des photos…');
+  let ajoutees = 0;
+  for (const f of fichiers) {
+    try {
+      const form = new FormData();
+      form.append('fichier', f);
+      form.append('nom', editingProduit.nom || 'photo');
+      const res = await api('/upload', { method: 'POST', body: form });
+      editingProduit.images.push(res.chemin);
+      ajoutees++;
+    } catch (err) {
+      toast(`${f.name} : ${err.message}`, true);
+    }
+  }
+  redessinerFiche();
+  if (ajoutees) { etat('Photos envoyées ✓'); toast(`${ajoutees} photo(s) ajoutée(s) — pense à enregistrer l'article`); }
+  else etat('Échec', true);
 }
 
 async function onClick(e) {
@@ -621,151 +465,153 @@ async function onClick(e) {
 
   if (t.closest('[data-close]') || t.classList.contains('ovl')) { fermerTout(); return; }
 
-  // ---- produits
-  if (t.closest('[data-newp]'))  { openProduitEditor(null); return; }
-  const editp = t.closest('[data-editp]');   if (editp)  { openProduitEditor(editp.dataset.editp); return; }
-  const togp  = t.closest('[data-togglestock]');
+  /* --- produits */
+  if (t.closest('[data-newp]')) { openProduitEditor(null); return; }
+  const editp = t.closest('[data-editp]'); if (editp) { openProduitEditor(editp.dataset.editp); return; }
+
+  const togp = t.closest('[data-togglestock]');
   if (togp) {
-    const p = draft.produits.find(x => x.id === togp.dataset.togglestock);
-    if (p) { p.stock = !p.stock; saveDraftLocal(); render(); toast(p.stock ? 'Article marqué en stock' : 'Article marqué en rupture'); }
-    return;
-  }
-  const delp = t.closest('[data-delp]');
-  if (delp) {
-    const p = draft.produits.find(x => x.id === delp.dataset.delp);
-    if (p && confirm(`Supprimer définitivement « ${p.nom} » ?`)) {
-      draft.produits = draft.produits.filter(x => x.id !== p.id);
-      saveDraftLocal(); render(); toast('Article supprimé');
-    }
+    const p = data.produits.find(x => x.id === togp.dataset.togglestock);
+    if (!p) return;
+    const maj = { ...p, stock: !p.stock };
+    try {
+      await enregistrer(() => api(`/produits/${encodeURIComponent(p.id)}`, { method: 'PUT', body: maj }));
+      p.stock = maj.stock;
+      render();
+      toast(p.stock ? 'Article marqué en stock' : 'Article marqué en rupture');
+    } catch (err) { /* déjà signalé */ }
     return;
   }
 
-  // ---- fiche produit (modale)
-  if (t.closest('#btnSaveP')) { saveProduit(); return; }
-  const addrow = t.closest('[data-addrow]');
-  if (addrow) {
-    syncFormToEditingProduit();
-    editingProduit[GROUP_KEY[addrow.dataset.addrow]].push('');
-    reredessinerFiche();
+  const delp = t.closest('[data-delp]');
+  if (delp) {
+    const p = data.produits.find(x => x.id === delp.dataset.delp);
+    if (!p || !confirm(`Supprimer définitivement « ${p.nom} » ?`)) return;
+    try {
+      await enregistrer(() => api(`/produits/${encodeURIComponent(p.id)}`, { method: 'DELETE' }), 'Article supprimé ✓');
+      data.produits = data.produits.filter(x => x.id !== p.id);
+      render();
+      toast('Article supprimé');
+    } catch (err) { /* déjà signalé */ }
     return;
   }
+
+  /* --- fiche produit */
+  if (t.closest('#btnSaveP')) { saveProduit().catch(() => {}); return; }
+  const addrow = t.closest('[data-addrow]');
+  if (addrow) { syncForm(); editingProduit[GROUP_KEY[addrow.dataset.addrow]].push(''); redessinerFiche(); return; }
   const delrow = t.closest('[data-delrow]');
   if (delrow) {
-    syncFormToEditingProduit();
+    syncForm();
     const [group, i] = delrow.dataset.delrow.split(':');
     editingProduit[GROUP_KEY[group]].splice(+i, 1);
-    reredessinerFiche();
+    redessinerFiche();
     return;
   }
   const delphoto = t.closest('[data-delphoto]');
-  if (delphoto) {
-    syncFormToEditingProduit();
-    editingProduit.images.splice(+delphoto.dataset.delphoto, 1);
-    reredessinerFiche();
-    return;
-  }
+  if (delphoto) { syncForm(); editingProduit.images.splice(+delphoto.dataset.delphoto, 1); redessinerFiche(); return; }
 
-  // ---- catégories
+  /* --- catégories */
   if (t.closest('[data-addcat]')) {
     const nom = prompt('Nom de la nouvelle catégorie (ex : Pantalons)');
     if (!nom || !nom.trim()) return;
-    let base = slugify(nom) || 'categorie', id = base, n = 2;
-    while (draft.categories.some(c => c.id === id)) id = `${base}-${n++}`;
-    draft.categories.push({ id, nom: nom.trim(), emoji: '🏷️' });
-    saveDraftLocal(); render();
+    try {
+      const c = await enregistrer(() => api('/categories', { method: 'POST', body: { nom: nom.trim(), emoji: '🏷️' } }), 'Catégorie créée ✓');
+      data.categories.push(c);
+      render();
+    } catch (err) { /* déjà signalé */ }
     return;
   }
   const delcat = t.closest('[data-delcat]');
   if (delcat) {
-    const i = +delcat.dataset.delcat;
-    const c = draft.categories[i];
-    const nb = draft.produits.filter(p => p.categorie === c.id).length;
-    if (nb > 0 && !confirm(`${nb} article(s) utilisent « ${c.nom} ». La supprimer quand même ? Ces articles resteront mais n'auront plus de catégorie visible tant que tu ne les modifies pas.`)) return;
-    draft.categories.splice(i, 1);
-    saveDraftLocal(); render();
+    const c = data.categories.find(x => x.id === delcat.dataset.delcat);
+    if (!c || !confirm(`Supprimer la catégorie « ${c.nom} » ?`)) return;
+    try {
+      await enregistrer(() => api(`/categories/${encodeURIComponent(c.id)}`, { method: 'DELETE' }), 'Catégorie supprimée ✓');
+      data.categories = data.categories.filter(x => x.id !== c.id);
+      render();
+    } catch (err) { /* déjà signalé */ }
     return;
   }
 
-  // ---- livraison
-  if (t.closest('[data-addzone]')) {
-    draft.livraison.zones.push({ id: 'zone-' + uid(), nom: 'Nouvelle zone', frais: 0, delai: '24h' });
-    saveDraftLocal(); render();
-    return;
-  }
-  const delzone = t.closest('[data-delzone]');
-  if (delzone) {
-    if (draft.livraison.zones.length <= 1) { toast('Il doit rester au moins une zone de livraison.', true); return; }
-    draft.livraison.zones.splice(+delzone.dataset.delzone, 1);
-    saveDraftLocal(); render();
-    return;
-  }
-
-  // ---- faq / avis
-  if (t.closest('[data-addfaq]')) { draft.faq.push({ q: '', r: '' }); saveDraftLocal(); render(); return; }
+  /* --- faq / avis */
+  if (t.closest('[data-addfaq]'))  { data.faq.push({ q: '', r: '' });      render(); return; }
+  if (t.closest('[data-addavis]')) { data.avis.push({ texte: '', nom: '' }); render(); return; }
   const delfaq = t.closest('[data-delfaq]');
-  if (delfaq) { draft.faq.splice(+delfaq.dataset.delfaq, 1); saveDraftLocal(); render(); return; }
-  if (t.closest('[data-addavis]')) { draft.avis.push({ texte: '', nom: '' }); saveDraftLocal(); render(); return; }
+  if (delfaq)  { data.faq.splice(+delfaq.dataset.delfaq, 1);   render(); sauverFaq().catch(() => {});  return; }
   const delavis = t.closest('[data-delavis]');
-  if (delavis) { draft.avis.splice(+delavis.dataset.delavis, 1); saveDraftLocal(); render(); return; }
+  if (delavis) { data.avis.splice(+delavis.dataset.delavis, 1); render(); sauverAvis().catch(() => {}); return; }
 
-  // ---- boutique / sécurité
+  /* --- mot de passe */
   if (t.closest('#btnPwdSave')) {
     const v = $('#pwdNew').value.trim();
-    if (v.length < 4) { toast('Le mot de passe doit contenir au moins 4 caractères.', true); return; }
-    savePwd(v); $('#pwdNew').value = '';
-    toast('Mot de passe mis à jour ✓');
-    return;
-  }
-
-  // ---- publier
-  if (t.closest('#btnConnect')) { await connecterDossier(); return; }
-  if (t.closest('#btnPublish')) { await publier(); return; }
-  if (t.closest('#btnCopyCode')) {
-    try { await navigator.clipboard.writeText(genererConfigJs(draft)); toast('Code copié ✓'); }
-    catch (e) { toast('Impossible de copier automatiquement — sélectionne le texte à la main.', true); }
-    return;
-  }
-  if (t.closest('#btnDownloadCode')) {
-    const blob = new Blob([genererConfigJs(draft)], { type: 'text/javascript' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob); a.download = 'config.js';
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    if (v.length < 6) { toast('Le mot de passe doit contenir au moins 6 caractères.', true); return; }
+    try {
+      await enregistrer(() => api('/motdepasse', { method: 'PUT', body: { motdepasse: v } }), 'Mot de passe changé ✓');
+      motdepasse = v;
+      sessionStorage.setItem(AUTH_KEY, v);
+      $('#pwdNew').value = '';
+      toast('Mot de passe mis à jour ✓');
+    } catch (err) { /* déjà signalé */ }
     return;
   }
 }
 
-/* ------------------------------------------------------------------ INIT */
-function afficherApp() {
+/* -------------------------------------------------------------------- INIT */
+async function afficherApp() {
   $('#gate').hidden = true;
   $('#app').hidden = false;
-  majDirty();
+  try {
+    await charger();
+  } catch (e) {
+    toast('Impossible de charger les données : ' + e.message, true);
+  }
   goTab('board');
 }
 
-async function init() {
-  draft = loadDraft();
-  await restaurerDossier();
+async function tenterConnexion(pwd) {
+  try {
+    motdepasse = pwd;
+    await api('/login', { method: 'POST' });
+    sessionStorage.setItem(AUTH_KEY, pwd);
+    await afficherApp();
+    return true;
+  } catch (e) {
+    motdepasse = '';
+    sessionStorage.removeItem(AUTH_KEY);
+    return false;
+  }
+}
 
-  $('#gateForm').addEventListener('submit', e => {
+function init() {
+  $('#gateForm').addEventListener('submit', async e => {
     e.preventDefault();
-    if (!doLogin($('#gatePwd').value)) {
+    const btn = $('#gateForm button[type=submit]');
+    btn.disabled = true;
+    const ok = await tenterConnexion($('#gatePwd').value);
+    btn.disabled = false;
+    if (!ok) {
       $('#gateErr').hidden = false;
       $('#gatePwd').value = '';
       $('#gatePwd').focus();
     }
   });
-  $('#btnLogout').addEventListener('click', doLogout);
-  $('#btnGoPub').addEventListener('click', () => goTab('publier'));
+  $('#btnLogout').addEventListener('click', () => {
+    sessionStorage.removeItem(AUTH_KEY);
+    location.reload();
+  });
   $('#burger').addEventListener('click', () => $('.side').classList.toggle('is-open'));
   $$('.tab').forEach(b => b.addEventListener('click', () => goTab(b.dataset.tab)));
 
   document.addEventListener('click', onClick);
   document.addEventListener('input', onInput);
-  document.addEventListener('change', e => { onChange(e); onFileChange(e); });
+  document.addEventListener('focusout', onBlur);
+  document.addEventListener('change', onFileChange);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') fermerTout(); });
+  $('#btnSaveP').addEventListener('click', () => saveProduit().catch(() => {}));
 
-  if (checkAuth()) afficherApp();
+  /* session déjà ouverte dans cet onglet */
+  if (motdepasse) tenterConnexion(motdepasse);
 }
 
 init();

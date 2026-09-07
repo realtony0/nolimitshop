@@ -7,7 +7,7 @@
 (() => {
 'use strict';
 
-const C   = window.CONFIG;
+let C     = window.CONFIG;
 const $   = (s, r = document) => r.querySelector(s);
 const $$  = (s, r = document) => [...r.querySelectorAll(s)];
 const KEY = 'nolimit_cart_v1';
@@ -224,20 +224,13 @@ const msgProduit = p =>
   (sel.couleur ? `\nCouleur : ${sel.couleur}` : '') +
   `\nEst-ce disponible ?`;
 
-/* ------------------------------------------------------------- COMMANDE */
-function zone() {
-  const id = $('#selZone').value;
-  return C.livraison.zones.find(z => z.id === id) || C.livraison.zones[0];
-}
-function fraisLivraison() {
-  const st = sousTotal();
-  const seuil = C.livraison.gratuiteApartir;
-  if (seuil && st >= seuil) return 0;
-  return zone().frais;
-}
-
+/* ------------------------------------------------------------- COMMANDE
+   Pas de frais ni de délai de livraison affichés ici : ce ne sont pas des
+   informations confirmées par la boutique. Le sous-total du panier est le
+   seul montant annoncé ; le reste (frais, délai, mode de paiement) se règle
+   directement dans la conversation WhatsApp qui suit l'envoi de la commande. */
 function rendreRecap() {
-  const st = sousTotal(), fr = fraisLivraison(), z = zone();
+  const st = sousTotal();
   $('#recap').innerHTML = `
     ${cart.map(l => {
       const p = produit(l.id);
@@ -245,13 +238,12 @@ function rendreRecap() {
       const o = [l.taille, l.couleur].filter(Boolean).join(' · ');
       return `<div class="recap__l"><span>${l.qte} × ${esc(p.nom)}${o ? ' <small>(' + esc(o) + ')</small>' : ''}</span><span>${fcfa(p.prix * l.qte)}</span></div>`;
     }).join('')}
-    <div class="recap__l"><span>Livraison — ${esc(z.nom)} (${esc(z.delai)})</span><span>${fr === 0 ? 'Offerte' : fcfa(fr)}</span></div>
-    <div class="recap__l recap__tot"><span>Total à payer</span><span>${fcfa(st + fr)}</span></div>
-    <p class="recap__pay">💵 Paiement en espèces à la livraison</p>`;
+    <div class="recap__l recap__tot"><span>Sous-total</span><span>${fcfa(st)}</span></div>
+    <p class="recap__pay">Les frais de livraison et le mode de paiement seront confirmés avec vous sur WhatsApp.</p>`;
 }
 
 function messageCommande(d) {
-  const z = zone(), fr = fraisLivraison(), st = sousTotal();
+  const st = sousTotal();
   const lignes = cart.map(l => {
     const p = produit(l.id);
     if (!p) return '';
@@ -261,14 +253,12 @@ function messageCommande(d) {
 
   return `🛍️ *NOUVELLE COMMANDE — ${C.boutique.nom}*\n\n` +
     `${lignes}\n\n` +
-    `Sous-total : ${fcfa(st)}\n` +
-    `Livraison (${z.nom}, ${z.delai}) : ${fr === 0 ? 'Offerte' : fcfa(fr)}\n` +
-    `*TOTAL : ${fcfa(st + fr)}* — paiement à la livraison\n\n` +
+    `Sous-total : ${fcfa(st)}\n\n` +
     `👤 Nom : ${d.nom}\n` +
     `📞 Téléphone : ${d.tel}\n` +
-    `📍 Adresse : ${d.adresse} — ${z.nom}\n` +
+    `📍 Adresse : ${d.adresse}\n` +
     (d.note ? `📝 Remarque : ${d.note}\n` : '') +
-    `\nMerci de me confirmer la livraison 🙏`;
+    `\nMerci de me confirmer la commande 🙏`;
 }
 
 /* Lien WhatsApp : si le numéro est renseigné, le message part pré-rempli.
@@ -301,16 +291,6 @@ const ICONES = {
 
 function rendreStatique() {
   const b = C.boutique;
-
-  /* bandeau défilant (dupliqué pour boucler sans coupure) */
-  const items = [
-    'Livraison 24h à Dakar &amp; banlieue',
-    'Paiement à la livraison',
-    'Échange sous 48h',
-    'Livraison partout au Sénégal',
-    `📞 ${esc(b.telephone)}`
-  ].map(t => `<span>${t}</span>`).join('');
-  $('#topbarTrack').innerHTML = items + items;
 
   /* catégories : chaque vignette prend la photo d'un article de la catégorie */
   $('#catsRow').innerHTML = C.categories.map(c => {
@@ -358,16 +338,15 @@ function rendreStatique() {
   $('#faqList').innerHTML = C.faq.map(f =>
     `<details class="qa"><summary>${esc(f.q)}</summary><p>${esc(f.r)}</p></details>`).join('');
 
-  /* zones de livraison */
-  $('#selZone').innerHTML = C.livraison.zones.map(z =>
-    `<option value="${esc(z.id)}">${esc(z.nom)} — ${z.frais === 0 ? 'offerte' : fcfa(z.frais)} · ${esc(z.delai)}</option>`).join('');
-
-  /* pied de page + contacts */
-  $('#ftrTel').textContent     = b.telephone;
-  $('#ftrMail').textContent    = b.email;
-  $('#ftrAdr').textContent     = b.adresse;
-  $('#ftrHoraires').textContent = b.horaires;
-  $('#telLink').href           = 'tel:' + b.telephone.replace(/\s/g, '');
+  /* pied de page + contacts : chaque ligne ne s'affiche que si elle est
+     réellement renseignée dans config.js — rien n'est deviné. */
+  const ligneContact = (id, val) => { const el = $('#' + id); if (val) el.textContent = val; else el.remove(); };
+  ligneContact('ftrTel', b.telephone);
+  ligneContact('ftrMail', b.email);
+  ligneContact('ftrAdr', b.adresse);
+  ligneContact('ftrHoraires', b.horaires);
+  if (b.telephone) { $('#telLink').href = 'tel:' + b.telephone.replace(/\s/g, ''); }
+  else { $('#telLink').remove(); }
   $('#year').textContent       = new Date().getFullYear();
   document.title               = `${b.nom} — ${b.slogan}`;
 
@@ -452,7 +431,6 @@ function brancher() {
     if (!cart.length) return;
     fermerTout(); rendreRecap(); ouvrir('#ovlCommande');
   });
-  $('#selZone').addEventListener('change', rendreRecap);
 
   /* envoi de la commande */
   $('#formCmd').addEventListener('submit', e => {
@@ -516,13 +494,30 @@ function brancher() {
   onScroll();
 }
 
-/* ------------------------------------------------------------------ DÉPART */
-rendreStatique();
-rendreFiltres();
-rendreGrille();
-majPanier();
-majLiensWa();
-brancher();
-reveler($$('.rev'));
+/* ------------------------------------------------------------------ DÉPART
+   Le contenu vient de la base de données (/api/config), gérée depuis le
+   back-office. assets/js/config.js sert de secours : si l'API ne répond pas
+   (site ouvert en local sans serveur, coupure…), la boutique s'affiche quand
+   même avec le dernier contenu connu. */
+function demarrer() {
+  rendreStatique();
+  rendreFiltres();
+  rendreGrille();
+  majPanier();
+  majLiensWa();
+  brancher();
+  reveler($$('.rev'));
+}
+
+fetch('/api/config', { headers: { accept: 'application/json' } })
+  .then(r => (r.ok ? r.json() : Promise.reject(new Error('API indisponible'))))
+  .then(data => {
+    if (data && Array.isArray(data.produits)) {
+      /* atouts n'est pas en base : on garde ceux du fichier. */
+      C = Object.assign({}, C, data, { atouts: C.atouts });
+    }
+  })
+  .catch(() => { /* on garde le contenu de config.js */ })
+  .finally(demarrer);
 
 })();
