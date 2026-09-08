@@ -1,9 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="14" fill="#16141a"/>
-  <g transform="translate(6 8) scale(0.26)" fill="#fff" stroke="#fff">
-    <path d="M74 50 V34a26 26 0 0 1 52 0v16" stroke-width="12" stroke-linecap="round" fill="none"/>
-    <path d="M60 52h80l-6 74H66z" stroke="none"/>
-    <circle cx="74" cy="58" r="4" fill="#16141a" stroke="none"/>
-    <circle cx="126" cy="58" r="4" fill="#16141a" stroke="none"/>
+  <rect width="64" height="64" rx="12" fill="#fff"/>
+  <g transform="translate(32 33) scale(0.235) translate(-100 -76)" fill="#111827" stroke="#111827">
+    <!-- sac gauche -->
+    <path d="M38 64V56a16 16 0 0 1 32 0v8" stroke-width="11" stroke-linecap="round" fill="none"/>
+    <path d="M24 66h56v54H24z" stroke="none"/>
+    <!-- sac droit -->
+    <path d="M130 64V56a16 16 0 0 1 32 0v8" stroke-width="11" stroke-linecap="round" fill="none"/>
+    <path d="M120 66h56v54h-56z" stroke="none"/>
+    <!-- sac central, par-dessus -->
+    <path d="M74 50V34a26 26 0 0 1 52 0v16" stroke-width="14" stroke-linecap="round" fill="none"/>
+    <path d="M56 52h88l-7 76H63z" stroke="none" stroke-width="6" stroke-linejoin="round"/>
   </g>
 </svg>

@@ -212,17 +212,9 @@ function rendreProduit() {
         ${p.stock
           ? `<button type="button" class="btn btn--primary" id="btnAdd">Ajouter au panier · ${fcfa(p.prix * sel.qte)}</button>`
           : `<button type="button" class="btn btn--primary" disabled>Article en rupture</button>`}
-        <a href="#" class="btn btn--wa" data-wa="${esc(msgProduit(p))}">Demander sur WhatsApp</a>
       </div>
     </div>`;
-  majLiensWa();
 }
-
-const msgProduit = p =>
-  `Bonjour Nolimit Shop 👋\nJe suis intéressé(e) par : ${p.nom} (${fcfa(p.prix)})` +
-  (sel.taille ? `\nTaille : ${sel.taille}` : '') +
-  (sel.couleur ? `\nCouleur : ${sel.couleur}` : '') +
-  `\nEst-ce disponible ?`;
 
 /* ------------------------------------------------------------- COMMANDE
    Pas de frais ni de délai de livraison affichés ici : ce ne sont pas des
@@ -254,10 +246,12 @@ function messageCommande(d) {
   return `🛍️ *NOUVELLE COMMANDE — ${C.boutique.nom}*\n\n` +
     `${lignes}\n\n` +
     `Sous-total : ${fcfa(st)}\n\n` +
-    `👤 Nom : ${d.nom}\n` +
+    `👤 Nom : ${d.prenom} ${d.nom}\n` +
     `📞 Téléphone : ${d.tel}\n` +
+    (d.email ? `✉️ Email : ${d.email}\n` : '') +
     `📍 Adresse : ${d.adresse}\n` +
-    (d.note ? `📝 Remarque : ${d.note}\n` : '') +
+    `🏙️ Ville : ${d.ville}\n` +
+    (d.note ? `📝 Message : ${d.note}\n` : '') +
     `\nMerci de me confirmer la commande 🙏`;
 }
 
@@ -267,9 +261,6 @@ const numeroOk = () => /^\d{8,15}$/.test(String(C.boutique.whatsapp || ''));
 const lienWa = msg => numeroOk()
   ? `https://wa.me/${C.boutique.whatsapp}?text=${encodeURIComponent(msg)}`
   : (C.boutique.whatsappLien || '#');
-
-const majLiensWa = () =>
-  $$('[data-wa]').forEach(a => { a.href = lienWa(a.dataset.wa); a.target = '_blank'; a.rel = 'noopener'; });
 
 /* --------------------------------------------------------- OUVRIR / FERMER */
 function ouvrir(sel_) {
@@ -345,8 +336,6 @@ function rendreStatique() {
   ligneContact('ftrMail', b.email);
   ligneContact('ftrAdr', b.adresse);
   ligneContact('ftrHoraires', b.horaires);
-  if (b.telephone) { $('#telLink').href = 'tel:' + b.telephone.replace(/\s/g, ''); }
-  else { $('#telLink').remove(); }
   $('#year').textContent       = new Date().getFullYear();
   document.title               = `${b.nom} — ${b.slogan}`;
 
@@ -437,13 +426,16 @@ function brancher() {
     e.preventDefault();
     const fd = new FormData(e.target);
     const d = {
+      prenom: (fd.get('prenom') || '').trim(),
       nom: (fd.get('nom') || '').trim(),
       tel: (fd.get('tel') || '').trim(),
+      email: (fd.get('email') || '').trim(),
       adresse: (fd.get('adresse') || '').trim(),
+      ville: (fd.get('ville') || '').trim(),
       note: (fd.get('note') || '').trim()
     };
     let ok = true;
-    ['nom', 'tel', 'adresse'].forEach(k => {
+    ['prenom', 'nom', 'tel', 'adresse', 'ville'].forEach(k => {
       const input = e.target.elements[k];
       const vide = !d[k] || (k === 'tel' && d.tel.replace(/\D/g, '').length < 7);
       input.classList.toggle('err', vide);
@@ -504,7 +496,6 @@ function demarrer() {
   rendreFiltres();
   rendreGrille();
   majPanier();
-  majLiensWa();
   brancher();
   reveler($$('.rev'));
 }
