@@ -6,10 +6,16 @@
 <title>Back-office — Nolimit Shop</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#111827">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Nolimit BO">
+<link rel="apple-touch-icon" href="/assets/img/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/admin.css?v=20260908150039">
+<link rel="stylesheet" href="assets/css/admin.css?v=20260908184918">
 </head>
 <body>
 
@@ -39,6 +45,7 @@
     </div>
     <nav class="side__nav" id="sideNav">
       <button class="tab is-on" data-tab="board"><span>📊</span> Tableau de bord</button>
+      <button class="tab" data-tab="commandes"><span>🛍️</span> Commandes <span class="pastille" id="badgeCmd" hidden>0</span></button>
       <button class="tab" data-tab="produits"><span>👕</span> Produits</button>
       <button class="tab" data-tab="categories"><span>🏷️</span> Catégories</button>
       <button class="tab" data-tab="boutique"><span>🏪</span> Boutique</button>
@@ -80,6 +87,6 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="assets/js/admin.js?v=20260908150039"></script>
+<script src="assets/js/admin.js?v=20260908184918"></script>
 </body>
 </html>

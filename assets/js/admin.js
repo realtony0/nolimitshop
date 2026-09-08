@@ -18,13 +18,14 @@ const fcfa = n => new Intl.NumberFormat('fr-FR').format(Math.round(n || 0)) + ' 
 
 const AUTH_KEY = 'nolimit_admin_pwd';
 const TITRES = {
-  board: 'Tableau de bord', produits: 'Produits',
+  board: 'Tableau de bord', commandes: 'Commandes', produits: 'Produits',
   categories: 'Catégories', boutique: 'Boutique', faq: 'FAQ & avis'
 };
 const GROUP_KEY = { epTailles: 'tailles', epCouleurs: 'couleurs', epDetails: 'details' };
 
 let motdepasse = sessionStorage.getItem(AUTH_KEY) || '';
 let data = { boutique: {}, categories: [], produits: [], faq: [], avis: [] };
+let commandes = [];
 let tab = 'board';
 let rechercheP = '';
 let editingId = null;
@@ -88,6 +89,16 @@ function fermerTout() {
 }
 
 /* --------------------------------------------------------------- CHARGEMENT */
+async function chargerCommandes() {
+  try {
+    commandes = await api('/commandes');
+    const nouvelles = commandes.filter(c => c.statut === 'nouvelle').length;
+    const b = $('#badgeCmd');
+    b.textContent = nouvelles;
+    b.hidden = nouvelles === 0;
+  } catch (e) { commandes = []; }
+}
+
 async function charger() {
   const cfg = await api('/config');
   data = {
@@ -97,6 +108,7 @@ async function charger() {
     faq: cfg.faq || [],
     avis: cfg.avis || []
   };
+  await chargerCommandes();
 }
 
 const catNom = id => (data.categories.find(c => c.id === id) || {}).nom || id;
@@ -355,6 +367,110 @@ function renderFaq() {
     </div>`;
 }
 
+
+/* -------------------------------------------------------------- COMMANDES */
+const STATUTS = {
+  nouvelle:  { nom: 'Nouvelle',  classe: 'tag--promo' },
+  vue:       { nom: 'Vue',       classe: '' },
+  confirmee: { nom: 'Confirmée', classe: 'tag--ok' },
+  annulee:   { nom: 'Annulée',   classe: 'tag--off' }
+};
+
+function dateCourte(iso) {
+  const d = new Date((iso || '').replace(' ', 'T') + 'Z');
+  if (isNaN(d)) return iso || '';
+  return d.toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+
+function commandeHtml(c) {
+  const st = STATUTS[c.statut] || STATUTS.nouvelle;
+  const tel = String(c.tel || '').replace(/\s/g, '');
+  return `<div class="card" style="padding:16px">
+    <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap">
+      <div style="flex:1;min-width:180px">
+        <p style="font-weight:700">${esc(c.prenom)} ${esc(c.nom)}
+          <span class="tag ${st.classe}">${st.nom}</span></p>
+        <p style="font-size:.82rem;color:var(--ink-3)">${esc(dateCourte(c.cree_le))} · commande n°${c.id}</p>
+      </div>
+      <p style="font-weight:800;font-size:1.05rem;white-space:nowrap">${fcfa(c.total)}</p>
+    </div>
+
+    <div style="margin:12px 0;padding:12px;background:var(--bg);border-radius:10px;font-size:.88rem">
+      ${(c.articles || []).map(a => `<div style="display:flex;justify-content:space-between;gap:10px;padding:3px 0">
+          <span>${a.qte} × ${esc(a.nom)}${(a.taille || a.couleur) ? ` <span style="color:var(--ink-3)">(${esc([a.taille, a.couleur].filter(Boolean).join(' · '))})</span>` : ''}</span>
+          <span style="white-space:nowrap">${fcfa(a.prix * a.qte)}</span>
+        </div>`).join('')}
+    </div>
+
+    <p style="font-size:.88rem;line-height:1.7">
+      📞 <a href="tel:${esc(tel)}" style="color:var(--accent);text-decoration:underline">${esc(c.tel)}</a><br>
+      ${c.email ? `✉️ ${esc(c.email)}<br>` : ''}
+      📍 ${esc(c.adresse)} — ${esc(c.ville)}
+      ${c.note ? `<br>📝 <i>${esc(c.note)}</i>` : ''}
+    </p>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
+      <a class="btn btn--ok btn--sm" href="https://wa.me/${esc(tel.replace(/^0/, '221'))}" target="_blank" rel="noopener">Écrire au client</a>
+      ${c.statut !== 'confirmee' ? `<button type="button" class="btn btn--ghost btn--sm" data-cmd="${c.id}" data-statut="confirmee">Marquer confirmée</button>` : ''}
+      ${c.statut !== 'annulee' ? `<button type="button" class="btn btn--ghost btn--sm" data-cmd="${c.id}" data-statut="annulee">Annuler</button>` : ''}
+      <button type="button" class="btn btn--danger btn--sm" data-delcmd="${c.id}">Supprimer</button>
+    </div>
+  </div>`;
+}
+
+function renderCommandes() {
+  const nouvelles = commandes.filter(c => c.statut === 'nouvelle').length;
+  return `
+    <div class="card">
+      <h2>Notifications</h2>
+      <p class="card__sub">Reçois une alerte sur ce téléphone dès qu'une commande arrive, même quand le back-office est fermé. Sur iPhone, il faut d'abord ajouter le back-office à l'écran d'accueil.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button type="button" class="btn btn--primary btn--sm" id="btnNotif">Activer les notifications</button>
+        <button type="button" class="btn btn--ghost btn--sm" id="btnNotifTest">Envoyer un test</button>
+      </div>
+      <p id="etatNotif" style="font-size:.84rem;color:var(--ink-3);margin-top:10px"></p>
+    </div>
+    ${nouvelles ? `<div class="hint"><b>${nouvelles} nouvelle${nouvelles > 1 ? 's' : ''} commande${nouvelles > 1 ? 's' : ''}</b></div>` : ''}
+    ${commandes.length
+      ? commandes.map(commandeHtml).join('')
+      : '<div class="card"><p style="color:var(--ink-3);text-align:center;padding:24px 0">Aucune commande pour l\'instant.</p></div>'}`;
+}
+
+/* ---------------------------------------------------- NOTIFICATIONS PUSH */
+const b64urlVersOctets = s => {
+  s = s.replace(/-/g, '+').replace(/_/g, '/');
+  while (s.length % 4) s += '=';
+  return Uint8Array.from(atob(s), c => c.charCodeAt(0));
+};
+
+function majEtatNotif(msg) { const el = $('#etatNotif'); if (el) el.textContent = msg; }
+
+async function activerNotifications() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    majEtatNotif("Ce navigateur ne gère pas les notifications. Sur iPhone, ajoute d'abord le back-office à l'écran d'accueil puis rouvre-le depuis cette icône.");
+    return;
+  }
+  try {
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') { majEtatNotif('Notifications refusées dans les réglages du navigateur.'); return; }
+
+    const reg = await navigator.serviceWorker.ready;
+    const { cle } = await api('/push/cle');
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: b64urlVersOctets(cle)
+      });
+    }
+    await api('/push/abonner', { method: 'POST', body: sub.toJSON() });
+    majEtatNotif('✅ Notifications activées sur cet appareil.');
+    toast('Notifications activées ✓');
+  } catch (e) {
+    majEtatNotif('Échec : ' + e.message);
+  }
+}
+
 /* ------------------------------------------------------------ TABLEAU DE BORD */
 function renderBoard() {
   const total = data.produits.length;
@@ -382,7 +498,7 @@ function renderBoard() {
 
 /* -------------------------------------------------------------------- RENDU */
 const RENDERERS = {
-  board: renderBoard, produits: renderProduits,
+  board: renderBoard, commandes: renderCommandes, produits: renderProduits,
   categories: renderCategories, boutique: renderBoutique, faq: renderFaq
 };
 function render() {
@@ -542,6 +658,41 @@ async function onClick(e) {
   const delavis = t.closest('[data-delavis]');
   if (delavis) { data.avis.splice(+delavis.dataset.delavis, 1); render(); sauverAvis().catch(() => {}); return; }
 
+  /* --- notifications */
+  if (t.closest('#btnNotif')) { await activerNotifications(); return; }
+  if (t.closest('#btnNotifTest')) {
+    try {
+      const r = await api('/push/test', { method: 'POST' });
+      majEtatNotif(r.envoyees ? `Test envoyé à ${r.envoyees} appareil(s).` : "Aucun appareil abonné : active d'abord les notifications.");
+    } catch (e) { majEtatNotif('Échec : ' + e.message); }
+    return;
+  }
+
+  /* --- commandes */
+  const cmd = t.closest('[data-cmd]');
+  if (cmd) {
+    const id = cmd.dataset.cmd, statut = cmd.dataset.statut;
+    try {
+      await enregistrer(() => api(`/commandes/${id}`, { method: 'PUT', body: { statut } }), 'Commande mise à jour ✓');
+      const c = commandes.find(x => String(x.id) === String(id));
+      if (c) c.statut = statut;
+      await chargerCommandes();
+      render();
+    } catch (e) { /* déjà signalé */ }
+    return;
+  }
+  const delcmd = t.closest('[data-delcmd]');
+  if (delcmd) {
+    if (!confirm('Supprimer définitivement cette commande ?')) return;
+    try {
+      await enregistrer(() => api(`/commandes/${delcmd.dataset.delcmd}`, { method: 'DELETE' }), 'Commande supprimée ✓');
+      commandes = commandes.filter(c => String(c.id) !== String(delcmd.dataset.delcmd));
+      await chargerCommandes();
+      render();
+    } catch (e) { /* déjà signalé */ }
+    return;
+  }
+
   /* --- mot de passe */
   if (t.closest('#btnPwdSave')) {
     const v = $('#pwdNew').value.trim();
@@ -584,6 +735,12 @@ async function tenterConnexion(pwd) {
 }
 
 function init() {
+  /* Service worker : rend le back-office installable sur l'écran d'accueil et
+     permet de recevoir les notifications quand il est fermé. */
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(() => { /* sans lui, tout marche sauf les notifications */ });
+  }
+
   $('#gateForm').addEventListener('submit', async e => {
     e.preventDefault();
     const btn = $('#gateForm button[type=submit]');
@@ -609,6 +766,14 @@ function init() {
   document.addEventListener('change', onFileChange);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') fermerTout(); });
   $('#btnSaveP').addEventListener('click', () => saveProduit().catch(() => {}));
+
+  /* Rafraîchissement discret : le badge des nouvelles commandes reste à jour
+     tant que le back-office est ouvert. */
+  setInterval(() => {
+    if (motdepasse && !$('#app').hidden) {
+      chargerCommandes().then(() => { if (tab === 'commandes') render(); });
+    }
+  }, 60000);
 
   /* session déjà ouverte dans cet onglet */
   if (motdepasse) tenterConnexion(motdepasse);

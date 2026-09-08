@@ -237,3 +237,11 @@ code{ background:rgba(22,20,26,.07); padding:2px 6px; border-radius:5px; font-si
 }
 .toast.is-on{ transform:translate(-50%,0); }
 .toast--err{ background:var(--danger); }
+
+/* pastille de comptage des nouvelles commandes dans le menu */
+.pastille{
+  display:inline-grid; place-items:center; min-width:20px; height:20px; padding:0 6px;
+  margin-left:auto; border-radius:999px; background:var(--accent); color:#fff;
+  font-size:.7rem; font-weight:700; line-height:1;
+}
+.pastille[hidden]{ display:none; }

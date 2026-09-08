@@ -53,3 +53,31 @@ CREATE TABLE IF NOT EXISTS avis (
   nom    TEXT NOT NULL,
   ordre  INTEGER NOT NULL DEFAULT 0
 );
+
+-- ---------------------------------------------------------------------------
+-- Commandes envoyées depuis le site (enregistrées avant l'ouverture de WhatsApp)
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS commandes (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  prenom     TEXT NOT NULL,
+  nom        TEXT NOT NULL,
+  tel        TEXT NOT NULL,
+  email      TEXT DEFAULT '',
+  adresse    TEXT NOT NULL,
+  ville      TEXT NOT NULL,
+  note       TEXT DEFAULT '',
+  articles   TEXT NOT NULL DEFAULT '[]',   -- JSON : [{id,nom,taille,couleur,qte,prix}]
+  total      INTEGER NOT NULL DEFAULT 0,
+  statut     TEXT NOT NULL DEFAULT 'nouvelle',  -- nouvelle | vue | confirmee | annulee
+  cree_le    TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_commandes_statut ON commandes(statut);
+CREATE INDEX IF NOT EXISTS idx_commandes_date ON commandes(cree_le DESC);
+
+-- Abonnements aux notifications push du back-office
+CREATE TABLE IF NOT EXISTS push_abonnes (
+  endpoint TEXT PRIMARY KEY,
+  p256dh   TEXT NOT NULL,
+  auth     TEXT NOT NULL,
+  cree_le  TEXT NOT NULL DEFAULT (datetime('now'))
+);

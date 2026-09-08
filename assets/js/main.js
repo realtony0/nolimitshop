@@ -443,6 +443,16 @@ function brancher() {
     });
     if (!ok) { toast('Merci de remplir vos coordonnées'); return; }
 
+    /* On enregistre la commande en base AVANT d'ouvrir WhatsApp : c'est ce qui
+       permet à la boutique de la retrouver dans le back-office et d'en être
+       notifiée, même si le client n'envoie finalement pas le message. */
+    const articles = cart.map(l => ({ id: l.id, taille: l.taille, couleur: l.couleur, qte: l.qte }));
+    fetch('/api/commandes', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ ...d, articles })
+    }).catch(() => { /* si l'enregistrement échoue, la commande part quand même sur WhatsApp */ });
+
     const msg = messageCommande(d);
     if (numeroOk()) {
       window.open(lienWa(msg), '_blank', 'noopener');
