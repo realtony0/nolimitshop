@@ -130,7 +130,7 @@ function rowProduitHtml(p) {
     <div class="prow__prix">${fcfa(p.prix)}${p.prixBarre > p.prix ? `<s>${fcfa(p.prixBarre)}</s>` : ''}</div>
     <div class="prow__act">
       <button type="button" class="iconb" data-editp="${esc(p.id)}" title="Modifier">✏️</button>
-      <button type="button" class="iconb" data-togglestock="${esc(p.id)}" title="${p.stock ? 'Marquer en rupture' : 'Marquer en stock'}">${p.stock ? '📦' : '🚫'}</button>
+      <button type="button" class="btn btn--sm ${p.stock ? 'btn--ghost' : 'btn--ok'}" data-togglestock="${esc(p.id)}">${p.stock ? 'Rupture de stock' : 'Remettre en stock'}</button>
       <button type="button" class="iconb iconb--danger" data-delp="${esc(p.id)}" title="Supprimer">🗑️</button>
     </div>
   </div>`;

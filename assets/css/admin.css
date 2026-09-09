@@ -245,3 +245,12 @@ code{ background:rgba(22,20,26,.07); padding:2px 6px; border-radius:5px; font-si
   font-size:.7rem; font-weight:700; line-height:1;
 }
 .pastille[hidden]{ display:none; }
+
+/* rangée produit : le bouton de stock est un vrai bouton libellé, il passe
+   à la ligne sous le reste quand la largeur manque */
+.prow__act{ flex-wrap:wrap; justify-content:flex-end; }
+.prow__act .btn{ white-space:nowrap; }
+@media (max-width:620px){
+  .prow__act{ width:100%; }
+  .prow__act .btn{ flex:1 1 auto; }
+}

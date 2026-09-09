@@ -1,17 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 140" fill="none" role="img" aria-label="Nolimit Shop">
-  <g fill="currentColor" stroke="currentColor">
-    <!-- sac gauche -->
-    <path d="M38 64 V56a16 16 0 0 1 32 0v8" stroke-width="9" stroke-linecap="round" fill="none"/>
-    <path d="M24 66h56v54H24z" stroke="none"/>
-    <circle cx="38" cy="72" r="3.4" fill="#fff" stroke="none"/>
-    <!-- sac droit -->
-    <path d="M130 64 V56a16 16 0 0 1 32 0v8" stroke-width="9" stroke-linecap="round" fill="none"/>
-    <path d="M120 66h56v54h-56z" stroke="none"/>
-    <circle cx="162" cy="72" r="3.4" fill="#fff" stroke="none"/>
-    <!-- sac central -->
-    <path d="M74 50 V34a26 26 0 0 1 52 0v16" stroke-width="12" stroke-linecap="round" fill="none"/>
-    <path d="M60 52h80l-6 74H66z" stroke="none"/>
-    <circle cx="74" cy="58" r="4" fill="#fff" stroke="none"/>
-    <circle cx="126" cy="58" r="4" fill="#fff" stroke="none"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="60 40 520 470" role="img" aria-label="No Limite Shop">
+  <g fill="currentColor">
+    <g transform="rotate(-5 170 390)">
+      <path d="M112 274V250a46 46 0 0 1 92 0v24" fill="none" stroke="currentColor" stroke-width="22" stroke-linecap="round"/>
+      <path d="M70 282h190v206H70z"/>
+      <circle cx="117" cy="310" r="12" fill="#faf7f2"/>
+    </g>
+    <g transform="rotate(5 470 390)">
+      <path d="M436 274V250a46 46 0 0 1 92 0v24" fill="none" stroke="currentColor" stroke-width="22" stroke-linecap="round"/>
+      <path d="M380 282h190v206H380z"/>
+      <circle cx="523" cy="310" r="12" fill="#faf7f2"/>
+    </g>
+    <g fill="none" stroke="#faf7f2" stroke-width="24" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M236 196V132a84 84 0 0 1 168 0v64"/>
+      <path d="M196 204h248l-16 306H212z"/>
+    </g>
+    <path d="M236 196V132a84 84 0 0 1 168 0v64" fill="none" stroke="currentColor" stroke-width="30" stroke-linecap="round"/>
+    <path d="M196 204h248l-16 306H212z"/>
+    <circle cx="236" cy="238" r="14" fill="#faf7f2"/>
+    <circle cx="404" cy="238" r="14" fill="#faf7f2"/>
   </g>
 </svg>

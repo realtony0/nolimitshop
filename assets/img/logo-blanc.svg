@@ -1,42 +1,42 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 940" role="img"
      aria-label="No Limite Shop, sneakers, outfit, accessoires. Là où le style rencontre la tendance">
-  <g fill="currentColor">
+  <g fill="#ffffff">
     <g transform="translate(180 0)">
       <g transform="rotate(-5 170 390)">
-        <path d="M112 274V250a46 46 0 0 1 92 0v24" fill="none" stroke="currentColor" stroke-width="22" stroke-linecap="round"/>
+        <path d="M112 274V250a46 46 0 0 1 92 0v24" fill="none" stroke="#ffffff" stroke-width="22" stroke-linecap="round"/>
         <path d="M70 282h190v206H70z"/>
-        <circle cx="117" cy="310" r="12" fill="#faf7f2"/>
+        <circle cx="117" cy="310" r="12" fill="#000000"/>
       </g>
       <g transform="rotate(5 470 390)">
-        <path d="M436 274V250a46 46 0 0 1 92 0v24" fill="none" stroke="currentColor" stroke-width="22" stroke-linecap="round"/>
+        <path d="M436 274V250a46 46 0 0 1 92 0v24" fill="none" stroke="#ffffff" stroke-width="22" stroke-linecap="round"/>
         <path d="M380 282h190v206H380z"/>
-        <circle cx="523" cy="310" r="12" fill="#faf7f2"/>
+        <circle cx="523" cy="310" r="12" fill="#000000"/>
       </g>
-      <g fill="none" stroke="#faf7f2" stroke-width="24" stroke-linejoin="round" stroke-linecap="round">
+      <g fill="none" stroke="#000000" stroke-width="24" stroke-linejoin="round" stroke-linecap="round">
         <path d="M236 196V132a84 84 0 0 1 168 0v64"/>
         <path d="M196 204h248l-16 306H212z"/>
       </g>
-      <path d="M236 196V132a84 84 0 0 1 168 0v64" fill="none" stroke="currentColor" stroke-width="30" stroke-linecap="round"/>
+      <path d="M236 196V132a84 84 0 0 1 168 0v64" fill="none" stroke="#ffffff" stroke-width="30" stroke-linecap="round"/>
       <path d="M196 204h248l-16 306H212z"/>
-      <circle cx="236" cy="238" r="14" fill="#faf7f2"/>
-      <circle cx="404" cy="238" r="14" fill="#faf7f2"/>
+      <circle cx="236" cy="238" r="14" fill="#000000"/>
+      <circle cx="404" cy="238" r="14" fill="#000000"/>
     </g>
 
-    <text x="500" y="672" text-anchor="middle" fill="currentColor"
+    <text x="500" y="672" text-anchor="middle" fill="#ffffff"
           textLength="800" lengthAdjust="spacingAndGlyphs"
           font-family="Arial Black, Arial, Helvetica, sans-serif" font-weight="900"
           font-size="96">NO LIMITE SHOP</text>
 
-    <g stroke="currentColor" stroke-width="5" stroke-linecap="round">
+    <g stroke="#ffffff" stroke-width="5" stroke-linecap="round">
       <line x1="110" y1="748" x2="215" y2="748"/>
       <line x1="785" y1="748" x2="890" y2="748"/>
     </g>
-    <text x="500" y="761" text-anchor="middle" fill="currentColor"
+    <text x="500" y="761" text-anchor="middle" fill="#ffffff"
           textLength="520" lengthAdjust="spacingAndGlyphs"
           font-family="Arial, Helvetica, sans-serif" font-weight="600"
           font-size="34">SNEAKERS | OUTFIT | ACCESSOIRES</text>
 
-    <text x="500" y="858" text-anchor="middle" fill="currentColor" opacity=".85"
+    <text x="500" y="858" text-anchor="middle" fill="#ffffff" opacity=".85"
           textLength="660" lengthAdjust="spacingAndGlyphs"
           font-family="Arial, Helvetica, sans-serif" font-weight="500"
           font-size="30">LÀ OÙ LE STYLE RENCONTRE LA TENDANCE</text>
