@@ -2,7 +2,7 @@
 import { json, erreur, exigerAuth, produitVersJson, slugify, idUnique } from '../lib/helpers.js';
 
 export async function onRequestGet({ env }) {
-  const { results } = await env.DB.prepare('SELECT * FROM produits ORDER BY ordre').all();
+  const { results } = await env.DB.prepare('SELECT * FROM produits ORDER BY ordre DESC').all();
   return json(results.map(produitVersJson));
 }
 

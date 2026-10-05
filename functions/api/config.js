@@ -10,7 +10,7 @@ export async function onRequestGet({ env }) {
     db.prepare("SELECT value FROM settings WHERE key = 'boutique'").first(),
     db.prepare("SELECT value FROM settings WHERE key = 'gratuite_apartir'").first(),
     db.prepare("SELECT id, nom, emoji FROM categories ORDER BY ordre").all(),
-    db.prepare("SELECT * FROM produits ORDER BY ordre").all(),
+    db.prepare("SELECT * FROM produits ORDER BY ordre DESC").all(),
     db.prepare("SELECT id, nom, frais, delai FROM livraison_zones ORDER BY ordre").all(),
     db.prepare("SELECT q, r FROM faq ORDER BY ordre").all(),
     db.prepare("SELECT texte, nom FROM avis ORDER BY ordre").all()
